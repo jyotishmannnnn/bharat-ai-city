@@ -1,5 +1,10 @@
-# Dev-only tooling and source assets. None of this is needed to serve the game,
-# and excluding it keeps the deployment upload small.
-scripts/
-logos/
-.tmp-sim/
+# Dev-only tooling and source art. Excluding it keeps the upload small.
+#
+# NOTE the leading slashes. .vercelignore follows .gitignore matching rules, so
+# an unanchored "logos/" also matches src/assets/logos/ -- which silently
+# stripped the logo PNGs the build imports and broke the deployment with
+# "Module not found: Can't resolve '@/assets/logos/sentrix.png'".
+# Anchor every directory pattern to the repo root.
+/scripts/
+/logos/
+/.tmp-sim/
