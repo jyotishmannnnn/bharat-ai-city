@@ -1,8 +1,7 @@
 "use client";
 
 import { useGameStore, getSectorTheme } from "@/lib/store";
-import { BuildingSprite, ItemByName } from "@/components/retro/PixelSprite";
-import { SECTOR_ITEMS } from "@/game/retro/items";
+import { BuildingSprite } from "@/components/retro/PixelSprite";
 import { chiptune, haptics } from "@/lib/chiptune";
 
 export default function MissionIntro() {
@@ -14,7 +13,6 @@ export default function MissionIntro() {
   const sectorId = chosenSectors[currentMissionIndex];
   const theme = getSectorTheme(sectorId);
   const seed = missionSeeds[sectorId];
-  const items = SECTOR_ITEMS[sectorId];
 
   const begin = () => {
     // Unlock audio here: this is a real gesture, and iOS needs one before the
@@ -64,27 +62,11 @@ export default function MissionIntro() {
         ))}
       </div>
 
-      {/* legend: shows the actual sprites the player will see in the run */}
-      <div className="flex items-start gap-5 mt-5">
-        <div className="flex flex-col items-center gap-1.5">
-          <ItemByName name={items.collect[0]} size={2} />
-          <span className="text-[6px] leading-relaxed text-[var(--p-lime)]">GRAB</span>
-        </div>
-        <div className="flex flex-col items-center gap-1.5">
-          <ItemByName name={items.obstacle[0]} size={2} />
-          <span className="text-[6px] leading-relaxed text-[var(--p-coral)]">DODGE</span>
-        </div>
-        <div className="flex flex-col items-center gap-1.5">
-          <ItemByName name={theme.powerups[0].effect} size={2} />
-          <span className="text-[6px] leading-relaxed text-[var(--p-cyan)]">POWER</span>
-        </div>
-      </div>
-
       <button
         onClick={begin}
         className="pixel-btn font-pixel w-full max-w-[320px] mt-6 bg-[var(--p-lime)] py-4 text-[10px] leading-relaxed text-[var(--p-black)]"
       >
-        BUILD STARTUP
+        VIEW BRIEFING
       </button>
     </div>
   );

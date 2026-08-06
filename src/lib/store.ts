@@ -14,6 +14,7 @@ export type Phase =
   | "welcome"
   | "select"
   | "missionIntro"
+  | "briefing"
   | "playing"
   | "generating"
   | "missionResult"
@@ -52,6 +53,7 @@ interface GameState {
   toggleSector: (sector: SectorId) => void;
   confirmSectors: () => void;
   beginCurrentMission: () => void;
+  startPlaying: () => void;
   completeMission: (result: MissionResult, startup: GeneratedStartup) => void;
   advanceAfterResult: () => void;
   finalizeFounderProfile: () => void;
@@ -89,7 +91,11 @@ export const useGameStore = create<GameState>((set, get) => ({
     set({ missionSeeds: seeds, currentMissionIndex: 0, phase: "missionIntro" });
   },
 
-  beginCurrentMission: () => set({ phase: "playing" }),
+  // Mission intro -> item briefing -> arcade. The briefing sits here rather
+  // than inside GameCanvas so the countdown timer never starts while the
+  // player is still reading what to collect.
+  beginCurrentMission: () => set({ phase: "briefing" }),
+  startPlaying: () => set({ phase: "playing" }),
 
   completeMission: (result, startup) => {
     const { missionResults, generatedStartups } = get();

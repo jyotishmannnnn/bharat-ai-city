@@ -8,6 +8,7 @@ import { MissionResult as MissionResultType } from "@/game/types";
 import Welcome from "@/components/screens/Welcome";
 import SectorSelect from "@/components/screens/SectorSelect";
 import MissionIntro from "@/components/screens/MissionIntro";
+import ItemBriefing from "@/components/screens/ItemBriefing";
 import GameCanvas from "@/components/screens/GameCanvas";
 import GeneratingOverlay from "@/components/screens/GeneratingOverlay";
 import MissionResult from "@/components/screens/MissionResult";
@@ -51,6 +52,7 @@ export default function Home() {
           {phase === "welcome" && <Welcome />}
           {phase === "select" && <SectorSelect />}
           {phase === "missionIntro" && <MissionIntro />}
+          {phase === "briefing" && <ItemBriefing />}
           {phase === "playing" && theme && seed && (
             <GameCanvas theme={theme} seed={seed} onComplete={handleMissionComplete} />
           )}
