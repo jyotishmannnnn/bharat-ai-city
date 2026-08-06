@@ -32,7 +32,10 @@ export default function Welcome() {
   };
 
   return (
-    <div className="pixel-screen crt relative w-full h-full overflow-y-auto flex flex-col items-center justify-center px-5 py-8">
+    // justify-start + m-auto on the content wrapper, NOT justify-center: a
+    // centred flex child that overflows gets clipped at the top with no way to
+    // scroll to it, which would hide the logos on shorter phones.
+    <div className="pixel-screen crt relative w-full h-full overflow-y-auto flex flex-col items-center justify-start px-5 py-8">
       {/* starfield */}
       <div
         aria-hidden
@@ -46,6 +49,9 @@ export default function Welcome() {
             "radial-gradient(1px 1px at 52% 8%, #d4d4e4 50%, transparent 50%)",
         }}
       />
+
+      <div className="m-auto flex w-full flex-col items-center">
+      <PoweredBy height={46} className="mb-6" />
 
       <div className="relative z-10 text-center">
         <div className="text-[7px] leading-relaxed text-[var(--p-cyan)] mb-3">
@@ -112,8 +118,7 @@ export default function Welcome() {
           START MISSION
         </button>
       </div>
-
-      <PoweredBy height={22} className="relative z-10 mt-7" />
+      </div>
     </div>
   );
 }

@@ -34,7 +34,9 @@ export default function Leaderboard() {
   const myIndex = entries.findIndex((e) => e.playerName === playerName);
 
   return (
-    <div className="pixel-screen crt w-full h-full overflow-y-auto px-4 pt-7 pb-8">
+    <div className="pixel-screen crt w-full h-full overflow-y-auto px-4 pt-6 pb-8">
+      <PoweredBy height={38} className="mb-5" />
+
       <h2 className="text-[12px] leading-relaxed text-[var(--p-yellow)] text-center">
         LEADERBOARD
       </h2>
@@ -133,8 +135,6 @@ export default function Leaderboard() {
       >
         PLAY AGAIN
       </button>
-
-      <PoweredBy height={20} className="mt-7 mb-2" />
     </div>
   );
 }
