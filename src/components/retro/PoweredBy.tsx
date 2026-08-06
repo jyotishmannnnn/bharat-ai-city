@@ -4,17 +4,21 @@ import Image from "next/image";
 import bharat1 from "@/assets/logos/bharat1.png";
 import sentrix from "@/assets/logos/sentrix.png";
 
-// Both marks are saturated colour on transparent, not black:
-//   Bharat-1.ai  magenta/purple #92218f, #6c06b3  -> 2.56:1 vs #0f0f17
-//   Sentrix      orange/rust    #9c472b           -> 3.05:1 vs #0f0f17
-// (measured by scripts/png-colors.mjs)
+// Both marks are saturated colour on transparent (scripts/png-colors.mjs):
+//   Bharat-1.ai  magenta/purple #92218f, #6c06b3
+//   Sentrix      orange/rust    #9c472b
 //
-// That reads fine directly on the dark backdrop, so they are shown unmodified
-// with no plate behind them.
+// Contrast against each backdrop:
+//                   on #0f0f17    on #ffffff
+//   Bharat-1.ai       2.56:1        7.38:1
+//   Sentrix           3.05:1        6.12:1
 //
-// z-60 is deliberate: the CRT scanline overlay (.crt::after) sits at z-50 and
-// spans the whole screen, so anything below it gets striped. Brand marks are
-// exempt from the scanline treatment.
+// So a white plate roughly triples legibility. Both marks stay unmodified --
+// recolouring someone's logo is a brand decision, not a styling one.
+//
+// The plate is stripe-free because this bar renders in the page shell, OUTSIDE
+// every .crt container, so the scanline overlay cannot reach it. z-60 is kept
+// as a belt-and-braces guard in case it is ever nested back inside one.
 //
 // Static imports (rather than /public + a string src) mean Next resolves the
 // URL at build time, so these keep working under basePath=/game.
@@ -22,18 +26,31 @@ import sentrix from "@/assets/logos/sentrix.png";
 const RATIO_BHARAT = 1197 / 408; // 2.93:1 landscape
 const RATIO_SENTRIX = 500 / 500; // 1:1 square
 
+export type PlateStyle = "white" | "translucent" | "none";
+
+const PLATE_BG: Record<PlateStyle, string | undefined> = {
+  white: "var(--p-white)",
+  translucent: "rgba(255,255,255,0.85)",
+  none: undefined,
+};
+
 export function PoweredBy({
   height = 40,
   label = null,
+  plate = "white",
   className = "",
 }: {
   /** Rendered logo height in px; widths derive from each logo's true ratio. */
   height?: number;
   label?: string | null;
+  plate?: PlateStyle;
   className?: string;
 }) {
   const bw = Math.round(height * RATIO_BHARAT);
   const sw = Math.round(height * RATIO_SENTRIX);
+  const padX = Math.round(height * 0.4);
+  const padY = Math.round(height * 0.28);
+  const bg = PLATE_BG[plate];
 
   return (
     <div
@@ -44,7 +61,15 @@ export function PoweredBy({
           {label}
         </div>
       )}
-      <div className="flex items-center" style={{ gap: Math.round(height * 0.35) }}>
+      <div
+        className={`flex items-center ${plate !== "none" ? "pixel-panel" : ""}`}
+        style={{
+          gap: Math.round(height * 0.38),
+          background: bg,
+          padding: plate !== "none" ? `${padY}px ${padX}px` : undefined,
+          borderWidth: plate !== "none" ? 3 : undefined,
+        }}
+      >
         <Image
           src={bharat1}
           alt="Bharat-1.ai"
@@ -55,8 +80,11 @@ export function PoweredBy({
         />
         <div
           aria-hidden
-          className="bg-[var(--p-slate)]"
-          style={{ width: 2, height: Math.round(height * 0.62) }}
+          style={{
+            width: 2,
+            height: Math.round(height * 0.66),
+            background: plate === "none" ? "var(--p-slate)" : "var(--p-silver)",
+          }}
         />
         <Image
           src={sentrix}
