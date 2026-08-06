@@ -1,0 +1,10 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "framework": "nextjs",
+  "regions": ["bom1"],
+  "build": {
+    "env": {
+      "NEXT_PUBLIC_BASE_PATH": "/game"
+    }
+  }
+}

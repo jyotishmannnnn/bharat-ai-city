@@ -1,0 +1,5 @@
+# Dev-only tooling and source assets. None of this is needed to serve the game,
+# and excluding it keeps the deployment upload small.
+scripts/
+logos/
+.tmp-sim/
