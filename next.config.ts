@@ -1,10 +1,15 @@
 import type { NextConfig } from "next";
 
-// Subpath hosting (e.g. yoursite.com/game).
+// Base path.
 //
-// Set NEXT_PUBLIC_BASE_PATH at BUILD time -- Next bakes basePath into the
-// generated asset URLs, so changing it after `next build` has no effect.
-// Leave unset to serve from the domain root.
+// The game deploys as a STANDALONE site (its own Vercel project at its own
+// hostname), so this is empty and the game serves from the domain root.
+//
+// Only set NEXT_PUBLIC_BASE_PATH if the game is ever served from a subpath of a
+// larger site, which additionally requires that site to rewrite /game/* to this
+// deployment. It must be set at BUILD time -- Next bakes basePath into the
+// generated asset URLs, so setting it afterwards has no effect and every
+// script and image 404s.
 //
 //   NEXT_PUBLIC_BASE_PATH=/game npm run build
 //
