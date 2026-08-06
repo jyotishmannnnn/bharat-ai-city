@@ -1,0 +1,433 @@
+{
+  "healthcare": {
+    "id": "healthcare",
+    "name": "Healthcare AI",
+    "tagline": "Heal a billion, one algorithm at a time",
+    "gradient": ["#0EA5A5", "#0B4F6C"],
+    "accent": "#2DD4BF",
+    "buildingGlyph": "🏥",
+    "buildingName": "Smart Hospital",
+    "playerGlyph": "🩺",
+    "collectibles": [
+      { "glyph": "📋", "color": "#2DD4BF", "label": "Patient Records", "points": 10 },
+      { "glyph": "🧬", "color": "#5EEAD4", "label": "Genome Data", "points": 15 },
+      { "glyph": "💊", "color": "#99F6E4", "label": "Drug Trial Data", "points": 12 }
+    ],
+    "obstacles": [
+      { "glyph": "🦠", "color": "#F87171", "label": "Virus Outbreak", "penalty": 12 },
+      { "glyph": "🔓", "color": "#FB923C", "label": "Privacy Breach", "penalty": 15 },
+      { "glyph": "❌", "color": "#EF4444", "label": "Bad Data", "penalty": 10 }
+    ],
+    "powerups": [
+      { "glyph": "🏛️", "color": "#FDE047", "label": "Government Grant", "effect": "multiplier", "duration": 8000 },
+      { "glyph": "🧪", "color": "#A78BFA", "label": "Medical Breakthrough", "effect": "shield", "duration": 6000 },
+      { "glyph": "🤝", "color": "#60A5FA", "label": "Hospital Partnership", "effect": "magnet", "duration": 7000 }
+    ],
+    "problems": [
+      "Hospital waiting time crisis",
+      "Rural diagnostic deserts",
+      "Doctor shortage in Tier-2 cities",
+      "Delayed disease detection",
+      "Fragmented patient records"
+    ],
+    "markets": [
+      "Government subsidy for digital health",
+      "Insurance sector going AI-first",
+      "Post-pandemic telehealth boom",
+      "Public hospital digitization drive"
+    ],
+    "opportunities": [
+      "Large hospital chain partnership",
+      "National health-ID integration",
+      "Rural clinic network access",
+      "WHO pilot programme invite"
+    ]
+  },
+  "sports": {
+    "id": "sports",
+    "name": "Sports AI",
+    "tagline": "Engineer champions with data",
+    "gradient": ["#F97316", "#7C2D12"],
+    "accent": "#FB923C",
+    "buildingGlyph": "🏟️",
+    "buildingName": "AI Stadium",
+    "playerGlyph": "🏃",
+    "collectibles": [
+      { "glyph": "📊", "color": "#FDBA74", "label": "Performance Data", "points": 10 },
+      { "glyph": "🏅", "color": "#FDE047", "label": "Talent Signals", "points": 14 },
+      { "glyph": "❤️", "color": "#FCA5A5", "label": "Biometric Feed", "points": 12 }
+    ],
+    "obstacles": [
+      { "glyph": "🤕", "color": "#EF4444", "label": "Injury", "penalty": 14 },
+      { "glyph": "🌧️", "color": "#60A5FA", "label": "Bad Weather", "penalty": 10 },
+      { "glyph": "📉", "color": "#F87171", "label": "Poor Data", "penalty": 8 }
+    ],
+    "powerups": [
+      { "glyph": "🥇", "color": "#FDE047", "label": "Olympics Deal", "effect": "multiplier", "duration": 8000 },
+      { "glyph": "🏆", "color": "#A78BFA", "label": "League Partnership", "effect": "shield", "duration": 6000 },
+      { "glyph": "⭐", "color": "#60A5FA", "label": "Star Athlete", "effect": "magnet", "duration": 7000 }
+    ],
+    "problems": [
+      "Talent scouting blind spots",
+      "Injury prediction failures",
+      "Fan engagement plateau",
+      "Amateur athlete data gap"
+    ],
+    "markets": [
+      "Olympic-cycle sponsorship rush",
+      "Fantasy sports boom",
+      "State sports-tech grants",
+      "Broadcast rights bidding war"
+    ],
+    "opportunities": [
+      "National league partnership",
+      "Olympic federation pilot",
+      "Sports academy rollout",
+      "Broadcast analytics deal"
+    ]
+  },
+  "semiconductors": {
+    "id": "semiconductors",
+    "name": "Semiconductor AI",
+    "tagline": "Design the chips that power Bharat",
+    "gradient": ["#6366F1", "#1E1B4B"],
+    "accent": "#818CF8",
+    "buildingGlyph": "🏭",
+    "buildingName": "Chip Factory",
+    "playerGlyph": "🔬",
+    "collectibles": [
+      { "glyph": "🧩", "color": "#A5B4FC", "label": "Chip Designs", "points": 10 },
+      { "glyph": "⚙️", "color": "#C7D2FE", "label": "Wafer Yield", "points": 13 },
+      { "glyph": "🔋", "color": "#818CF8", "label": "Power Efficiency Data", "points": 12 }
+    ],
+    "obstacles": [
+      { "glyph": "💥", "color": "#EF4444", "label": "Manufacturing Defect", "penalty": 15 },
+      { "glyph": "🚚", "color": "#FB923C", "label": "Supply Chain Delay", "penalty": 10 },
+      { "glyph": "🔥", "color": "#F87171", "label": "Overheating", "penalty": 12 }
+    ],
+    "powerups": [
+      { "glyph": "🏛️", "color": "#FDE047", "label": "Government Subsidy", "effect": "multiplier", "duration": 8000 },
+      { "glyph": "🏗️", "color": "#A78BFA", "label": "New Fab Unlocked", "effect": "shield", "duration": 6000 },
+      { "glyph": "🔍", "color": "#60A5FA", "label": "Advanced Lithography", "effect": "magnet", "duration": 7000 }
+    ],
+    "problems": [
+      "Import dependency on foreign chips",
+      "Low fab yield rates",
+      "Design talent shortage",
+      "Legacy node bottlenecks"
+    ],
+    "markets": [
+      "Production-linked incentive scheme",
+      "Global chip shortage windfall",
+      "Defense-grade chip demand",
+      "EV chip demand surge"
+    ],
+    "opportunities": [
+      "State semiconductor mission grant",
+      "Global foundry JV offer",
+      "Defense procurement contract",
+      "EV maker supply deal"
+    ]
+  },
+  "quantum": {
+    "id": "quantum",
+    "name": "Quantum AI",
+    "tagline": "Compute the impossible",
+    "gradient": ["#8B5CF6", "#2E1065"],
+    "accent": "#C4B5FD",
+    "buildingGlyph": "🛰️",
+    "buildingName": "Quantum Lab",
+    "playerGlyph": "⚛️",
+    "collectibles": [
+      { "glyph": "🔮", "color": "#DDD6FE", "label": "Qubit States", "points": 12 },
+      { "glyph": "🧠", "color": "#C4B5FD", "label": "Algorithm Data", "points": 15 },
+      { "glyph": "📡", "color": "#A78BFA", "label": "Entanglement Signal", "points": 13 }
+    ],
+    "obstacles": [
+      { "glyph": "❄️", "color": "#60A5FA", "label": "Decoherence", "penalty": 14 },
+      { "glyph": "⚡", "color": "#FBBF24", "label": "Noise Spike", "penalty": 10 },
+      { "glyph": "🕳️", "color": "#F87171", "label": "Data Leak", "penalty": 12 }
+    ],
+    "powerups": [
+      { "glyph": "🧊", "color": "#93C5FD", "label": "Cryo-cooling Breakthrough", "effect": "shield", "duration": 6000 },
+      { "glyph": "🏛️", "color": "#FDE047", "label": "National Quantum Mission", "effect": "multiplier", "duration": 8000 },
+      { "glyph": "🌀", "color": "#818CF8", "label": "Entanglement Boost", "effect": "magnet", "duration": 7000 }
+    ],
+    "problems": [
+      "Qubit stability failures",
+      "Extreme compute cost",
+      "Talent scarcity in quantum",
+      "No industry-grade use case yet"
+    ],
+    "markets": [
+      "National Quantum Mission funding",
+      "Defense research grants",
+      "University research partnerships",
+      "Global quantum race pressure"
+    ],
+    "opportunities": [
+      "Defense lab collaboration",
+      "IIT quantum research tie-up",
+      "Sovereign compute grant",
+      "Global quantum consortium invite"
+    ]
+  },
+  "entertainment": {
+    "id": "entertainment",
+    "name": "Entertainment AI",
+    "tagline": "Make a billion people feel something",
+    "gradient": ["#EC4899", "#701A75"],
+    "accent": "#F472B6",
+    "buildingGlyph": "🎬",
+    "buildingName": "Creator Studio",
+    "playerGlyph": "🎮",
+    "collectibles": [
+      { "glyph": "🎨", "color": "#F9A8D4", "label": "Creative Assets", "points": 10 },
+      { "glyph": "🎵", "color": "#F472B6", "label": "Audio Tracks", "points": 12 },
+      { "glyph": "🎥", "color": "#E879F9", "label": "Video Footage", "points": 13 }
+    ],
+    "obstacles": [
+      { "glyph": "⚠️", "color": "#F87171", "label": "Copyright Strike", "penalty": 14 },
+      { "glyph": "😴", "color": "#FCA5A5", "label": "Low Engagement", "penalty": 10 },
+      { "glyph": "🐛", "color": "#FB923C", "label": "Buggy Render", "penalty": 8 }
+    ],
+    "powerups": [
+      { "glyph": "🌟", "color": "#FDE047", "label": "Celebrity Collab", "effect": "multiplier", "duration": 8000 },
+      { "glyph": "🔥", "color": "#F87171", "label": "Trending Meme", "effect": "magnet", "duration": 7000 },
+      { "glyph": "📢", "color": "#60A5FA", "label": "Viral Campaign", "effect": "shield", "duration": 6000 }
+    ],
+    "problems": [
+      "Content saturation fatigue",
+      "Regional-language content gap",
+      "Piracy revenue leakage",
+      "Creator burnout at scale"
+    ],
+    "markets": [
+      "OTT regional expansion boom",
+      "Short-video ad revenue surge",
+      "Gaming industry gold rush",
+      "Festival-season content demand"
+    ],
+    "opportunities": [
+      "OTT platform licensing deal",
+      "Celebrity studio tie-up",
+      "Game publisher partnership",
+      "National film body grant"
+    ]
+  },
+  "robotics": {
+    "id": "robotics",
+    "name": "Robotics AI",
+    "tagline": "Build the hands of the future",
+    "gradient": ["#F59E0B", "#78350F"],
+    "accent": "#FBBF24",
+    "buildingGlyph": "🤖",
+    "buildingName": "Automation Hub",
+    "playerGlyph": "🦾",
+    "collectibles": [
+      { "glyph": "🔧", "color": "#FDE68A", "label": "Motion Data", "points": 10 },
+      { "glyph": "🛠️", "color": "#FCD34D", "label": "Sensor Logs", "points": 12 },
+      { "glyph": "📦", "color": "#FBBF24", "label": "Assembly Data", "points": 13 }
+    ],
+    "obstacles": [
+      { "glyph": "⚡", "color": "#F87171", "label": "Actuator Failure", "penalty": 13 },
+      { "glyph": "🧯", "color": "#FB923C", "label": "Factory Fire Risk", "penalty": 15 },
+      { "glyph": "🪫", "color": "#EF4444", "label": "Power Drain", "penalty": 9 }
+    ],
+    "powerups": [
+      { "glyph": "🏗️", "color": "#A78BFA", "label": "New Automation Line", "effect": "shield", "duration": 6000 },
+      { "glyph": "🏛️", "color": "#FDE047", "label": "Manufacturing Subsidy", "effect": "multiplier", "duration": 8000 },
+      { "glyph": "🧲", "color": "#60A5FA", "label": "Precision Upgrade", "effect": "magnet", "duration": 7000 }
+    ],
+    "problems": [
+      "Manual labour shortage in factories",
+      "High defect rates on lines",
+      "Slow warehouse fulfilment",
+      "Unsafe hazardous-zone work"
+    ],
+    "markets": [
+      "Make-in-India manufacturing push",
+      "E-commerce warehouse boom",
+      "Defense automation demand",
+      "Labour cost inflation"
+    ],
+    "opportunities": [
+      "Auto manufacturer contract",
+      "Warehouse automation deal",
+      "Defense robotics tender",
+      "Export manufacturing tie-up"
+    ]
+  },
+  "agriculture": {
+    "id": "agriculture",
+    "name": "AgriTech AI",
+    "tagline": "Grow more, waste less",
+    "gradient": ["#65A30D", "#365314"],
+    "accent": "#A3E635",
+    "buildingGlyph": "🌾",
+    "buildingName": "Smart Farm Grid",
+    "playerGlyph": "🚜",
+    "collectibles": [
+      { "glyph": "🌱", "color": "#BEF264", "label": "Crop Data", "points": 10 },
+      { "glyph": "💧", "color": "#7DD3FC", "label": "Soil Moisture Data", "points": 12 },
+      { "glyph": "🛰️", "color": "#A3E635", "label": "Satellite Imagery", "points": 14 }
+    ],
+    "obstacles": [
+      { "glyph": "🐛", "color": "#F87171", "label": "Pest Outbreak", "penalty": 12 },
+      { "glyph": "🔥", "color": "#FB923C", "label": "Drought", "penalty": 14 },
+      { "glyph": "🌪️", "color": "#94A3B8", "label": "Storm Damage", "penalty": 13 }
+    ],
+    "powerups": [
+      { "glyph": "🏛️", "color": "#FDE047", "label": "Farm Subsidy", "effect": "multiplier", "duration": 8000 },
+      { "glyph": "🌧️", "color": "#60A5FA", "label": "Perfect Monsoon", "effect": "shield", "duration": 6000 },
+      { "glyph": "🚁", "color": "#A78BFA", "label": "Drone Survey Boost", "effect": "magnet", "duration": 7000 }
+    ],
+    "problems": [
+      "Unpredictable crop yields",
+      "Water wastage in irrigation",
+      "Post-harvest spoilage",
+      "Small-farmer credit gap"
+    ],
+    "markets": [
+      "Government farm-tech subsidy",
+      "Climate-resilient farming push",
+      "Agri-export demand surge",
+      "Rural fintech expansion"
+    ],
+    "opportunities": [
+      "State agriculture department deal",
+      "FPO cooperative rollout",
+      "Agri-export house partnership",
+      "Satellite data licensing deal"
+    ]
+  },
+  "mobility": {
+    "id": "mobility",
+    "name": "Mobility AI",
+    "tagline": "Move a billion people, smartly",
+    "gradient": ["#0284C7", "#082F49"],
+    "accent": "#38BDF8",
+    "buildingGlyph": "🚉",
+    "buildingName": "Smart Transit Hub",
+    "playerGlyph": "🛺",
+    "collectibles": [
+      { "glyph": "🗺️", "color": "#7DD3FC", "label": "Route Data", "points": 10 },
+      { "glyph": "🔋", "color": "#38BDF8", "label": "EV Battery Data", "points": 13 },
+      { "glyph": "📍", "color": "#BAE6FD", "label": "Traffic Signals", "points": 12 }
+    ],
+    "obstacles": [
+      { "glyph": "🚧", "color": "#FB923C", "label": "Road Blockage", "penalty": 11 },
+      { "glyph": "🌊", "color": "#60A5FA", "label": "Flood Disruption", "penalty": 14 },
+      { "glyph": "🚨", "color": "#F87171", "label": "Traffic Accident", "penalty": 13 }
+    ],
+    "powerups": [
+      { "glyph": "🏛️", "color": "#FDE047", "label": "EV Policy Boost", "effect": "multiplier", "duration": 8000 },
+      { "glyph": "🛰️", "color": "#A78BFA", "label": "GPS Network Upgrade", "effect": "magnet", "duration": 7000 },
+      { "glyph": "🚦", "color": "#4ADE80", "label": "Smart Signal Sync", "effect": "shield", "duration": 6000 }
+    ],
+    "problems": [
+      "Chronic urban traffic congestion",
+      "Poor last-mile connectivity",
+      "EV charging network gaps",
+      "Logistics fleet inefficiency"
+    ],
+    "markets": [
+      "EV adoption policy push",
+      "Metro-city smart transit funding",
+      "E-commerce logistics boom",
+      "Fuel price volatility"
+    ],
+    "opportunities": [
+      "City transit authority deal",
+      "EV fleet operator partnership",
+      "Logistics giant integration",
+      "Highway authority contract"
+    ]
+  },
+  "education": {
+    "id": "education",
+    "name": "EdTech AI",
+    "tagline": "Teach a billion minds, personally",
+    "gradient": ["#7C3AED", "#3B0764"],
+    "accent": "#A855F7",
+    "buildingGlyph": "🏫",
+    "buildingName": "AI Learning Campus",
+    "playerGlyph": "🎓",
+    "collectibles": [
+      { "glyph": "📚", "color": "#D8B4FE", "label": "Curriculum Data", "points": 10 },
+      { "glyph": "🧠", "color": "#C084FC", "label": "Learning Patterns", "points": 14 },
+      { "glyph": "✏️", "color": "#A855F7", "label": "Assessment Data", "points": 11 }
+    ],
+    "obstacles": [
+      { "glyph": "📴", "color": "#F87171", "label": "Digital Divide", "penalty": 13 },
+      { "glyph": "😵", "color": "#FB923C", "label": "Dropout Risk", "penalty": 12 },
+      { "glyph": "🚫", "color": "#EF4444", "label": "Content Piracy", "penalty": 9 }
+    ],
+    "powerups": [
+      { "glyph": "🏛️", "color": "#FDE047", "label": "National Education Grant", "effect": "multiplier", "duration": 8000 },
+      { "glyph": "🌐", "color": "#60A5FA", "label": "Rural Broadband Boost", "effect": "magnet", "duration": 7000 },
+      { "glyph": "🏆", "color": "#4ADE80", "label": "State Board Partnership", "effect": "shield", "duration": 6000 }
+    ],
+    "problems": [
+      "Rural learning gap",
+      "One-size-fits-all curriculum",
+      "Teacher shortage",
+      "Vernacular content scarcity"
+    ],
+    "markets": [
+      "National education policy push",
+      "Vernacular content boom",
+      "Skilling mission funding",
+      "Post-pandemic hybrid learning"
+    ],
+    "opportunities": [
+      "State education board deal",
+      "Skilling mission tie-up",
+      "School chain rollout",
+      "Vernacular publisher partnership"
+    ]
+  },
+  "climate": {
+    "id": "climate",
+    "name": "Climate AI",
+    "tagline": "Cool the planet, city by city",
+    "gradient": ["#059669", "#022C22"],
+    "accent": "#34D399",
+    "buildingGlyph": "🌳",
+    "buildingName": "Green Grid Tower",
+    "playerGlyph": "🌍",
+    "collectibles": [
+      { "glyph": "🍃", "color": "#6EE7B7", "label": "Emissions Data", "points": 10 },
+      { "glyph": "☀️", "color": "#FDE047", "label": "Solar Yield Data", "points": 13 },
+      { "glyph": "💨", "color": "#34D399", "label": "Air Quality Data", "points": 12 }
+    ],
+    "obstacles": [
+      { "glyph": "🌊", "color": "#60A5FA", "label": "Flood Damage", "penalty": 14 },
+      { "glyph": "🔥", "color": "#F87171", "label": "Heatwave", "penalty": 13 },
+      { "glyph": "🏭", "color": "#94A3B8", "label": "Carbon Spike", "penalty": 11 }
+    ],
+    "powerups": [
+      { "glyph": "🏛️", "color": "#FDE047", "label": "Green Energy Subsidy", "effect": "multiplier", "duration": 8000 },
+      { "glyph": "🌬️", "color": "#60A5FA", "label": "Clean Wind Corridor", "effect": "shield", "duration": 6000 },
+      { "glyph": "🛰️", "color": "#A78BFA", "label": "Climate Satellite Data", "effect": "magnet", "duration": 7000 }
+    ],
+    "problems": [
+      "Rising urban heat islands",
+      "Industrial carbon overload",
+      "Water table depletion",
+      "Air quality emergencies"
+    ],
+    "markets": [
+      "National green energy mission",
+      "Carbon credit market boom",
+      "Climate resilience funding",
+      "ESG investor pressure"
+    ],
+    "opportunities": [
+      "Municipal green grid contract",
+      "Carbon credit exchange listing",
+      "Renewable energy JV",
+      "UN climate pilot invite"
+    ]
+  }
+}

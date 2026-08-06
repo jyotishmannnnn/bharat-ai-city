@@ -1,0 +1,134 @@
+[
+  {
+    "id": "gov-subsidy",
+    "title": "Government Launches Subsidy!",
+    "flavor": "Bharat AI City just announced a new subsidy for {sector} startups.",
+    "icon": "🏛️",
+    "choices": [
+      { "label": "Take the grant", "description": "+250 instant score, but slower for 5s (paperwork).", "scoreDelta": 250, "speedDelta": -0.15 },
+      { "label": "Reinvest in R&D", "description": "+15% valuation multiplier for rest of run.", "valuationMultiplier": 1.15 },
+      { "label": "Ignore it", "description": "Stay lean, +1 life instead.", "livesDelta": 1 }
+    ]
+  },
+  {
+    "id": "compute-double",
+    "title": "Compute Prices Double!",
+    "flavor": "GPU cloud costs just spiked across Bharat AI City.",
+    "icon": "💸",
+    "choices": [
+      { "label": "Absorb the cost", "description": "-150 score now, keep momentum.", "scoreDelta": -150 },
+      { "label": "Slow down ops", "description": "Speed -20% for 6s, save your score.", "speedDelta": -0.2 },
+      { "label": "Raise emergency funds", "description": "-10% valuation multiplier but full speed.", "valuationMultiplier": 0.9 }
+    ]
+  },
+  {
+    "id": "competitor-launch",
+    "title": "A Competitor Just Launched!",
+    "flavor": "A rival {sector} startup went live in Bharat AI City today.",
+    "icon": "⚔️",
+    "choices": [
+      { "label": "Race harder", "description": "Speed +25% for 6s, higher risk higher reward.", "speedDelta": 0.25 },
+      { "label": "Differentiate", "description": "+10% valuation multiplier, steady pace.", "valuationMultiplier": 1.1 },
+      { "label": "Undercut pricing", "description": "+180 score, -5% valuation.", "scoreDelta": 180, "valuationMultiplier": 0.95 }
+    ]
+  },
+  {
+    "id": "cheap-gpu",
+    "title": "NVIDIA Announces Cheaper GPUs!",
+    "flavor": "New GPU pricing just made {sector} AI models 3x cheaper to train.",
+    "icon": "🖥️",
+    "choices": [
+      { "label": "Scale up fast", "description": "Obstacle rate +15% but score rate +20%.", "spawnRateDelta": 0.15, "scoreDelta": 200 },
+      { "label": "Bank the savings", "description": "+220 instant score.", "scoreDelta": 220 },
+      { "label": "Train a bigger model", "description": "+12% valuation multiplier.", "valuationMultiplier": 1.12 }
+    ]
+  },
+  {
+    "id": "big-partnership",
+    "title": "Major Partnership Offer!",
+    "flavor": "A large enterprise wants to partner with your {sector} startup.",
+    "icon": "🤝",
+    "choices": [
+      { "label": "Sign exclusive deal", "description": "+20% valuation multiplier, lose 5s shield window.", "valuationMultiplier": 1.2 },
+      { "label": "Stay independent", "description": "+1 life, keep full control.", "livesDelta": 1 },
+      { "label": "Negotiate harder", "description": "+300 score, deal takes longer to close.", "scoreDelta": 300, "speedDelta": -0.1 }
+    ]
+  },
+  {
+    "id": "global-event",
+    "title": "Global Spotlight Moment!",
+    "flavor": "A global stage event just put {sector} in the spotlight.",
+    "icon": "🌍",
+    "choices": [
+      { "label": "Go all in on PR", "description": "+15% valuation multiplier.", "valuationMultiplier": 1.15 },
+      { "label": "Focus on product", "description": "+260 score instead.", "scoreDelta": 260 },
+      { "label": "Do both, stretched thin", "description": "+130 score AND +8% valuation, but -1 life risk.", "scoreDelta": 130, "valuationMultiplier": 1.08, "livesDelta": -1 }
+    ]
+  },
+  {
+    "id": "regulation",
+    "title": "Major Regulation Announced!",
+    "flavor": "New compliance rules just hit every {sector} startup in Bharat AI City.",
+    "icon": "📜",
+    "choices": [
+      { "label": "Comply fully", "description": "-100 score, but obstacle rate -15% (safer run).", "scoreDelta": -100, "spawnRateDelta": -0.15 },
+      { "label": "Lobby for exemption", "description": "-8% valuation multiplier, no other effect.", "valuationMultiplier": 0.92 },
+      { "label": "Move fast anyway", "description": "+1 life, obstacle rate +10%.", "livesDelta": 1, "spawnRateDelta": 0.1 }
+    ]
+  },
+  {
+    "id": "flood-logistics",
+    "title": "Flood Disrupts Supply Lines!",
+    "flavor": "Heavy flooding is disrupting logistics across the {sector} corridor.",
+    "icon": "🌊",
+    "choices": [
+      { "label": "Reroute operations", "description": "Speed -15% for 5s, save your streak.", "speedDelta": -0.15 },
+      { "label": "Push through", "description": "-1 life, keep full speed.", "livesDelta": -1 },
+      { "label": "Pause and reassess", "description": "-120 score, obstacle rate -10%.", "scoreDelta": -120, "spawnRateDelta": -0.1 }
+    ]
+  },
+  {
+    "id": "breakthrough-tech",
+    "title": "Breakthrough Technology Unveiled!",
+    "flavor": "A new frontier technology just became available to {sector} builders.",
+    "icon": "✨",
+    "choices": [
+      { "label": "Adopt immediately", "description": "+18% valuation multiplier.", "valuationMultiplier": 1.18 },
+      { "label": "Wait and watch", "description": "+1 life, no risk.", "livesDelta": 1 },
+      { "label": "Full commit", "description": "+280 score, obstacle rate +12%.", "scoreDelta": 280, "spawnRateDelta": 0.12 }
+    ]
+  },
+  {
+    "id": "celebrity-endorsement",
+    "title": "Celebrity Endorsement Offer!",
+    "flavor": "A major celebrity wants to endorse your {sector} startup.",
+    "icon": "🌟",
+    "choices": [
+      { "label": "Sign them on", "description": "+240 score instantly.", "scoreDelta": 240 },
+      { "label": "Save budget instead", "description": "+10% valuation multiplier.", "valuationMultiplier": 1.1 },
+      { "label": "Go viral organically", "description": "Score rate boosted, +1 life.", "livesDelta": 1, "scoreDelta": 100 }
+    ]
+  },
+  {
+    "id": "investor-frenzy",
+    "title": "Investor Frenzy!",
+    "flavor": "VCs are suddenly obsessed with {sector} AI startups.",
+    "icon": "💰",
+    "choices": [
+      { "label": "Raise a big round", "description": "+25% valuation multiplier, dilution risk.", "valuationMultiplier": 1.25 },
+      { "label": "Bootstrap on", "description": "+320 score, no dilution.", "scoreDelta": 320 },
+      { "label": "Take a small cheque", "description": "+150 score AND +5% valuation.", "scoreDelta": 150, "valuationMultiplier": 1.05 }
+    ]
+  },
+  {
+    "id": "talent-poach",
+    "title": "Talent Poaching War!",
+    "flavor": "Rivals are poaching top {sector} engineers across the city.",
+    "icon": "🧠",
+    "choices": [
+      { "label": "Counter-offer hard", "description": "-140 score, keep your team.", "scoreDelta": -140 },
+      { "label": "Let them go", "description": "-1 life, save your cash.", "livesDelta": -1 },
+      { "label": "Build a moat instead", "description": "+10% valuation multiplier.", "valuationMultiplier": 1.1 }
+    ]
+  }
+]
