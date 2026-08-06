@@ -6,7 +6,6 @@ import { PixelSprite } from "@/components/retro/PixelSprite";
 import { BUILDINGS } from "@/game/retro/items";
 import { chiptune, haptics } from "@/lib/chiptune";
 import { MISSIONS_PER_RUN } from "@/lib/gameConfig";
-import { PoweredBy } from "@/components/retro/PoweredBy";
 
 // Decorative skyline strip. CSS-animated (not Framer) so it stays off the JS
 // main thread on low-end phones -- a real share of a 1200-person room.
@@ -51,8 +50,6 @@ export default function Welcome() {
       />
 
       <div className="m-auto flex w-full flex-col items-center">
-      <PoweredBy height={46} className="mb-6" />
-
       <div className="relative z-10 text-center">
         <div className="text-[7px] leading-relaxed text-[var(--p-cyan)] mb-3">
           BHARAT AI SUMMIT PRESENTS

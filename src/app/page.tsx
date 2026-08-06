@@ -2,8 +2,10 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { useGameStore, getSectorTheme } from "@/lib/store";
+import type { Phase } from "@/lib/store";
 import { generateStartup } from "@/lib/generateStartup";
 import { MissionResult as MissionResultType } from "@/game/types";
+import { PoweredBy } from "@/components/retro/PoweredBy";
 
 import Welcome from "@/components/screens/Welcome";
 import SectorSelect from "@/components/screens/SectorSelect";
@@ -15,6 +17,12 @@ import MissionResult from "@/components/screens/MissionResult";
 import CityView from "@/components/screens/CityView";
 import FounderCard from "@/components/screens/FounderCard";
 import Leaderboard from "@/components/screens/Leaderboard";
+
+/** Phases that surrender the logo bar's vertical space.
+ *  - playing:  the arcade field needs every pixel of height
+ *  - briefing: the densest screen in the game; the logos would push the
+ *              "I'M READY" button below the fold on shorter phones */
+const HIDE_LOGOS: Phase[] = ["playing", "briefing"];
 
 export default function Home() {
   const phase = useGameStore((s) => s.phase);
@@ -28,6 +36,8 @@ export default function Home() {
   const theme = sectorId ? getSectorTheme(sectorId) : null;
   const seed = sectorId ? missionSeeds[sectorId] : null;
 
+  const showLogos = !HIDE_LOGOS.includes(phase);
+
   const handleMissionComplete = async (
     result: MissionResultType,
     valuationMultiplier: number
@@ -39,30 +49,40 @@ export default function Home() {
   };
 
   return (
-    <div className="relative w-full h-full flex-1 overflow-hidden">
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={phase}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.25 }}
-          className="absolute inset-0"
-        >
-          {phase === "welcome" && <Welcome />}
-          {phase === "select" && <SectorSelect />}
-          {phase === "missionIntro" && <MissionIntro />}
-          {phase === "briefing" && <ItemBriefing />}
-          {phase === "playing" && theme && seed && (
-            <GameCanvas theme={theme} seed={seed} onComplete={handleMissionComplete} />
-          )}
-          {phase === "generating" && <GeneratingOverlay />}
-          {phase === "missionResult" && <MissionResult />}
-          {phase === "cityReveal" && <CityView />}
-          {phase === "founderCard" && <FounderCard />}
-          {phase === "leaderboard" && <Leaderboard />}
-        </motion.div>
-      </AnimatePresence>
+    <div className="flex h-full w-full flex-1 flex-col overflow-hidden bg-[var(--p-black)]">
+      {/* Persistent logo bar. Lives outside AnimatePresence so it stays put
+          across phase transitions instead of fading in and out on every screen. */}
+      {showLogos && (
+        <header className="safe-top shrink-0 flex justify-center pt-4 pb-3">
+          <PoweredBy height={40} />
+        </header>
+      )}
+
+      <div className="relative w-full flex-1 overflow-hidden">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={phase}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            className="absolute inset-0"
+          >
+            {phase === "welcome" && <Welcome />}
+            {phase === "select" && <SectorSelect />}
+            {phase === "missionIntro" && <MissionIntro />}
+            {phase === "briefing" && <ItemBriefing />}
+            {phase === "playing" && theme && seed && (
+              <GameCanvas theme={theme} seed={seed} onComplete={handleMissionComplete} />
+            )}
+            {phase === "generating" && <GeneratingOverlay />}
+            {phase === "missionResult" && <MissionResult />}
+            {phase === "cityReveal" && <CityView />}
+            {phase === "founderCard" && <FounderCard />}
+            {phase === "leaderboard" && <Leaderboard />}
+          </motion.div>
+        </AnimatePresence>
+      </div>
     </div>
   );
 }

@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 import { useLeaderboard } from "@/lib/leaderboard";
 import { useGameStore } from "@/lib/store";
 import { chiptune, haptics } from "@/lib/chiptune";
-import { PoweredBy } from "@/components/retro/PoweredBy";
 
 const RANK_LABEL = ["1ST", "2ND", "3RD"];
 
@@ -35,8 +34,6 @@ export default function Leaderboard() {
 
   return (
     <div className="pixel-screen crt w-full h-full overflow-y-auto px-4 pt-6 pb-8">
-      <PoweredBy height={38} className="mb-5" />
-
       <h2 className="text-[12px] leading-relaxed text-[var(--p-yellow)] text-center">
         LEADERBOARD
       </h2>
