@@ -28,6 +28,62 @@ html, body {
   overscroll-behavior: none;
 }
 
+/* Mobile browsers resize the viewport when the address bar hides/shows, which
+   makes `100%` jump mid-game. dvh tracks the *dynamic* viewport instead.
+   Declared second so browsers without dvh keep the 100% above. */
+html, body {
+  height: 100dvh;
+}
+
+/* Long-press on the play surface otherwise raises iOS's selection/copy
+   callout. Inputs are re-enabled below so the name field still works. */
+body {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: manipulation;
+}
+
+input, textarea {
+  -webkit-user-select: auto;
+  user-select: auto;
+}
+
+/* Keep fixed bottom bars clear of the iPhone home indicator. */
+.safe-bottom {
+  padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+}
+
+.safe-top {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* Landscape is unsupported: the field is portrait-shaped and the HUD assumes
+   vertical space. Rather than ship a broken layout, ask for a rotate. */
+.rotate-notice {
+  display: none;
+}
+
+@media (orientation: landscape) and (max-height: 520px) {
+  .rotate-notice {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    background: #0f0f17;
+    color: #f7e04c;
+    font-family: var(--font-pixel), "Courier New", monospace;
+    font-size: 10px;
+    line-height: 2;
+    text-align: center;
+    padding: 1.5rem;
+  }
+}
+
 /* ---------------------------------------------------------------- retro --- */
 
 /* The same 32-colour palette used by the canvas renderer, exposed to the DOM
@@ -139,6 +195,12 @@ html, body {
 @keyframes pixel-fall {
   from { transform: translateY(0) rotate(0deg); opacity: 1; }
   to   { transform: translateY(105vh) rotate(180deg); opacity: 0; }
+}
+
+/* Briefing demo: shows the actor sliding freely rather than snapping to lanes. */
+@keyframes pixel-drag {
+  0%, 100% { left: 4%; }
+  50%      { left: calc(96% - 1rem); }
 }
 
 /* Foil sheen sweep across the founder card border. */

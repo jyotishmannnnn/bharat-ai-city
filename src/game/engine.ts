@@ -4,12 +4,37 @@ export const LANES = 5;
 export const MISSION_DURATION_MS = 45000;
 export const EVENT_TIMES_MS = [14000, 30000]; // two random events per run
 
+/** Half the player sprite's width in normalised screen units. Used to clamp
+ *  the player so the sprite never hangs off either edge. */
+export const PLAYER_HALF_W = 0.0625; // 16px sprite in a ~128px backbuffer
+
+/** Collection is deliberately more forgiving than obstacle collision: a near
+ *  miss that *looks* like a touch should award the pickup, while a near miss on
+ *  a hazard should read as a skilful dodge. Classic arcade asymmetry.
+ *  A lane is 1/5 = 0.2 wide, so ~0.1 reproduces the old "same lane" threshold. */
+export const COLLECT_RADIUS = 0.11;
+export const OBSTACLE_RADIUS = 0.085;
+
+/** Magnet reaches roughly one lane either side, matching the previous
+ *  `Math.abs(e.lane - playerLane) === 1` behaviour. */
+export const MAGNET_RADIUS = 0.24;
+
+/** Centre of a lane in normalised screen units. Entities still spawn on the
+ *  5-lane grid so the field stays visually organised; only the player moves
+ *  continuously. */
+export function laneToX(lane: number): number {
+  return (lane + 0.5) / LANES;
+}
+
 export type EntityKind = "collect" | "obstacle" | "powerup";
 
 export interface Entity {
   id: number;
   kind: EntityKind;
   lane: number;
+  /** Continuous horizontal position 0..1. Seeded from `lane` at spawn, but the
+   *  magnet powerup can drag it off the grid. */
+  x: number;
   y: number; // 0 (top) -> 1 (bottom, player row)
   defIndex: number;
   glyph: string;
@@ -18,7 +43,7 @@ export interface Entity {
 
 export interface FloatingText {
   id: number;
-  lane: number;
+  x: number;
   y: number;
   text: string;
   color: string;
@@ -33,7 +58,7 @@ export interface ActivePowerup {
 export interface EngineSnapshot {
   entities: Entity[];
   floatingTexts: FloatingText[];
-  playerLane: number;
+  playerX: number;
   score: number;
   combo: number;
   shieldActive: boolean;
@@ -50,7 +75,8 @@ let idCounter = 1;
 
 export class ArcadeEngine {
   theme: SectorTheme;
-  playerLane = 2;
+  /** Continuous player position, 0..1 across the play field. */
+  playerX = 0.5;
   score = 0;
   combo = 0;
   collected = 0;
@@ -72,16 +98,23 @@ export class ArcadeEngine {
     this.theme = theme;
   }
 
+  /** Set the player's horizontal position directly from a normalised pointer
+   *  position. Clamped so the sprite never leaves the field. */
+  setPlayerX(x: number) {
+    this.playerX = Math.max(PLAYER_HALF_W, Math.min(1 - PLAYER_HALF_W, x));
+  }
+
+  /** Relative nudge, used by the desktop arrow keys. */
+  nudge(dx: number) {
+    this.setPlayerX(this.playerX + dx);
+  }
+
   moveLeft() {
-    this.playerLane = Math.max(0, this.playerLane - 1);
+    this.nudge(-1 / LANES);
   }
 
   moveRight() {
-    this.playerLane = Math.min(LANES - 1, this.playerLane + 1);
-  }
-
-  setLane(lane: number) {
-    this.playerLane = Math.max(0, Math.min(LANES - 1, lane));
+    this.nudge(1 / LANES);
   }
 
   private hasEffect(effect: PowerupEffect, now: number): boolean {
@@ -101,7 +134,7 @@ export class ArcadeEngine {
   }) {
     if (delta.scoreDelta) {
       this.score = Math.max(0, this.score + delta.scoreDelta);
-      this.pushFloatingText(2, delta.scoreDelta > 0 ? "#4ADE80" : "#F87171", `${delta.scoreDelta > 0 ? "+" : ""}${delta.scoreDelta}`);
+      this.pushFloatingText(0.5, delta.scoreDelta > 0 ? "#4ADE80" : "#F87171", `${delta.scoreDelta > 0 ? "+" : ""}${delta.scoreDelta}`);
     }
     if (delta.spawnRateDelta) {
       this.spawnRateMultiplier = Math.max(0.4, this.spawnRateMultiplier + delta.spawnRateDelta);
@@ -115,8 +148,8 @@ export class ArcadeEngine {
     // valuationMultiplier and livesDelta are consumed by the caller (React layer)
   }
 
-  private pushFloatingText(lane: number, color: string, text: string) {
-    this.floatingTexts.push({ id: idCounter++, lane, y: 0.8, text, color, life: 1 });
+  private pushFloatingText(x: number, color: string, text: string) {
+    this.floatingTexts.push({ id: idCounter++, x, y: 0.8, text, color, life: 1 });
   }
 
   private spawn(now: number) {
@@ -147,7 +180,16 @@ export class ArcadeEngine {
       color = def.color;
     }
 
-    this.entities.push({ id: idCounter++, kind, lane, y: -0.05, defIndex, glyph, color });
+    this.entities.push({
+      id: idCounter++,
+      kind,
+      lane,
+      x: laneToX(lane),
+      y: -0.05,
+      defIndex,
+      glyph,
+      color,
+    });
   }
 
   tick(dtMs: number, now: number): EngineSnapshot {
@@ -181,15 +223,23 @@ export class ArcadeEngine {
     for (const e of this.entities) {
       e.y += speed * dtMs;
 
-      const magnetPull = magnet && Math.abs(e.lane - this.playerLane) === 1 && e.y > 0.6;
-      if (magnetPull) {
-        e.lane = this.playerLane;
+      // Magnet now drags collectibles continuously toward the player rather
+      // than snapping them a whole lane, which reads much better when the
+      // player can sit between lanes.
+      if (magnet && e.kind === "collect" && e.y > 0.6) {
+        const dist = this.playerX - e.x;
+        if (Math.abs(dist) <= MAGNET_RADIUS) {
+          e.x += dist * Math.min(1, dtMs * 0.006);
+        }
       }
 
       const atPlayerRow = e.y >= 0.86 && e.y <= 0.98;
-      if (atPlayerRow && e.lane === this.playerLane) {
-        this.resolveCollision(e, shield, now);
-        continue; // consumed
+      if (atPlayerRow) {
+        const radius = e.kind === "obstacle" ? OBSTACLE_RADIUS : COLLECT_RADIUS;
+        if (Math.abs(e.x - this.playerX) <= radius) {
+          this.resolveCollision(e, shield, now);
+          continue; // consumed
+        }
       }
 
       if (e.y > 1.08) {
@@ -218,7 +268,7 @@ export class ArcadeEngine {
     return {
       entities: this.entities,
       floatingTexts: this.floatingTexts,
-      playerLane: this.playerLane,
+      playerX: this.playerX,
       score: this.score,
       combo: this.combo,
       shieldActive: shield,

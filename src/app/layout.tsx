@@ -41,8 +41,19 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} ${pressStart.variable} h-full antialiased`}
     >
-      <body className="min-h-full h-full flex flex-col overflow-hidden bg-[#0B1120]">
+      <body className="min-h-full h-full flex flex-col overflow-hidden bg-[#0f0f17]">
         {children}
+        <div className="rotate-notice" role="alert">
+          <div style={{ fontSize: 28 }} aria-hidden>
+            &#8635;
+          </div>
+          <div>ROTATE YOUR PHONE</div>
+          <div style={{ color: "#9a9ab5", fontSize: 8 }}>
+            BHARAT AI CITY IS PLAYED
+            <br />
+            IN PORTRAIT
+          </div>
+        </div>
       </body>
     </html>
   );

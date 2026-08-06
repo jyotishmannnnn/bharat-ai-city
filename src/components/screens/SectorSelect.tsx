@@ -69,7 +69,7 @@ export default function SectorSelect() {
         })}
       </div>
 
-      <div className="fixed bottom-0 left-0 right-0 p-3 bg-[var(--p-black)] border-t-[3px] border-[var(--p-shadow)]">
+      <div className="safe-bottom fixed bottom-0 left-0 right-0 px-3 pt-3 bg-[var(--p-black)] border-t-[3px] border-[var(--p-shadow)]">
         <button
           onClick={() => {
             chiptune.init();

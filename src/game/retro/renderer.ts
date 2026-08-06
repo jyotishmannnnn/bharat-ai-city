@@ -366,7 +366,7 @@ export class RetroRenderer {
     // --- entities ---------------------------------------------------------
     const sectorItems = SECTOR_ITEMS[theme.id];
     for (const e of snapshot.entities) {
-      const ex = Math.round(e.lane * laneW + laneW / 2 - ITEM_SIZE / 2);
+      const ex = Math.round(e.x * w - ITEM_SIZE / 2);
       const ey = Math.round(e.y * h - ITEM_SIZE / 2);
 
       let s: ItemSprite;
@@ -398,7 +398,7 @@ export class RetroRenderer {
     }
 
     // --- player -----------------------------------------------------------
-    const px = Math.round(snapshot.playerLane * laneW + laneW / 2 - PLAYER_SIZE / 2);
+    const px = Math.round(snapshot.playerX * w - PLAYER_SIZE / 2);
     const py = playerRowY - PLAYER_SIZE + 4;
     const hurt = timeMs < this.hurtUntil;
     const bob = Math.floor(timeMs / 220) % PLAYER_FRAMES.length;
@@ -433,7 +433,7 @@ export class RetroRenderer {
     // --- floating texts ---------------------------------------------------
     for (const f of snapshot.floatingTexts) {
       if (f.life <= 0) continue;
-      const fx = Math.round(f.lane * laneW + laneW / 2);
+      const fx = Math.round(f.x * w);
       const fy = Math.round(f.y * h);
       const col = quantize(f.color);
       drawText(ctx, f.text, fx, fy, css(f.life > 0.4 ? col : shade(col, -1)), {
@@ -500,10 +500,9 @@ export class RetroRenderer {
   }
 
   /** Called by the React layer on discrete gameplay events so the renderer can
-   *  throw pixel particles. Purely cosmetic. */
-  burst(kind: "collect" | "hit" | "powerup", lane: number, color: string) {
-    const laneW = this.w / LANES;
-    const x = lane * laneW + laneW / 2;
+   *  throw pixel particles. Purely cosmetic. `nx` is normalised 0..1. */
+  burst(kind: "collect" | "hit" | "powerup", nx: number, color: string) {
+    const x = nx * this.w;
     const y = this.h * 0.88;
     const tint = quantize(color);
     if (kind === "collect") this.emit(x, y, tint, 8, 0.035);

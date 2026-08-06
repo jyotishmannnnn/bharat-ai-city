@@ -4,7 +4,6 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import eventsData from "@/data/events.json";
 import {
   ArcadeEngine,
-  LANES,
   MISSION_DURATION_MS,
   EVENT_TIMES_MS,
   EngineSnapshot,
@@ -134,19 +133,19 @@ export default function GameCanvas({ theme, seed, onComplete }: Props) {
       if (f.text === "BLOCKED") {
         chiptune.blocked();
         haptics.medium();
-        renderer?.burst("powerup", f.lane, f.color);
+        renderer?.burst("powerup", f.x, f.color);
       } else if (f.text.startsWith("+")) {
         chiptune.collect(snap.combo);
         haptics.light();
-        renderer?.burst("collect", f.lane, f.color);
+        renderer?.burst("collect", f.x, f.color);
       } else if (f.text.startsWith("-")) {
         chiptune.hit();
         haptics.heavy();
-        renderer?.burst("hit", f.lane, f.color);
+        renderer?.burst("hit", f.x, f.color);
       } else {
         chiptune.powerup();
         haptics.pattern([15, 30, 15]);
-        renderer?.burst("powerup", f.lane, f.color);
+        renderer?.burst("powerup", f.x, f.color);
       }
     }
     if (seenTextIds.current.size > 600) seenTextIds.current.clear();
@@ -211,27 +210,59 @@ export default function GameCanvas({ theme, seed, onComplete }: Props) {
     };
   }, [countIn, finish, reactToEvents, theme]);
 
-  // touch / click controls -- behaviour identical to the pre-retro build
+  // Drag-anywhere controls. The player tracks the pointer's X from ANY point on
+  // the screen, so a thumb held low and central never covers the actor or the
+  // collision row -- which it would if you had to drag the sprite itself.
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+    let dragging = false;
 
-    const handleTap = (clientX: number) => {
-      const rect = canvas.getBoundingClientRect();
-      const relX = clientX - rect.left;
+    const moveTo = (clientX: number) => {
       const engine = engineRef.current;
       if (!engine) return;
-      const lane = Math.floor((relX / rect.width) * LANES);
-      engine.setLane(lane);
+      const rect = canvas.getBoundingClientRect();
+      if (rect.width <= 0) return;
+      engine.setPlayerX((clientX - rect.left) / rect.width);
     };
 
     const onPointerDown = (ev: PointerEvent) => {
       chiptune.init(); // iOS unlocks audio only inside a gesture
-      handleTap(ev.clientX);
+      dragging = true;
+      // Capture so the drag survives the finger leaving the canvas bounds.
+      try {
+        canvas.setPointerCapture(ev.pointerId);
+      } catch {
+        /* capture unsupported -- plain listeners still work */
+      }
+      moveTo(ev.clientX);
+      ev.preventDefault();
     };
+
+    const onPointerMove = (ev: PointerEvent) => {
+      if (!dragging) return;
+      moveTo(ev.clientX);
+      ev.preventDefault();
+    };
+
+    const stop = (ev: PointerEvent) => {
+      dragging = false;
+      try {
+        canvas.releasePointerCapture(ev.pointerId);
+      } catch {
+        /* nothing captured */
+      }
+    };
+
     canvas.addEventListener("pointerdown", onPointerDown);
+    canvas.addEventListener("pointermove", onPointerMove);
+    canvas.addEventListener("pointerup", stop);
+    canvas.addEventListener("pointercancel", stop);
     return () => {
       canvas.removeEventListener("pointerdown", onPointerDown);
+      canvas.removeEventListener("pointermove", onPointerMove);
+      canvas.removeEventListener("pointerup", stop);
+      canvas.removeEventListener("pointercancel", stop);
     };
   }, []);
 
@@ -279,7 +310,8 @@ export default function GameCanvas({ theme, seed, onComplete }: Props) {
       <button
         onClick={toggleMute}
         aria-label={muted ? "Unmute" : "Mute"}
-        className="pixel-btn font-pixel absolute bottom-3 right-3 z-30 bg-[#2c2c46] text-[#d4d4e4] text-[8px] px-2 py-1.5"
+        style={{ bottom: "calc(0.75rem + env(safe-area-inset-bottom, 0px))" }}
+        className="pixel-btn font-pixel absolute right-3 z-30 bg-[#2c2c46] text-[#d4d4e4] text-[8px] px-2 py-1.5"
       >
         {muted ? "SND OFF" : "SND ON"}
       </button>

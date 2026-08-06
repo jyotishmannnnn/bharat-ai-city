@@ -137,27 +137,31 @@ export default function ItemBriefing() {
             HOW TO PLAY
           </div>
           <div className="text-[6px] leading-[2] text-[var(--p-off)]">
-            TAP A LANE TO MOVE THERE.
+            DRAG YOUR FINGER ANYWHERE
+            <br />
+            ON SCREEN TO MOVE.
             <br />
             CHAIN PICKUPS FOR A COMBO.
             <br />
             YOU HAVE 45 SECONDS.
           </div>
-          <div className="flex gap-1 mt-3" aria-hidden>
-            {[0, 1, 2, 3, 4].map((i) => (
-              <div
-                key={i}
-                className="flex-1 h-6 border-2 border-[var(--p-black)]"
-                style={{
-                  background: i === 2 ? "var(--p-lime)" : "var(--p-slate)",
-                }}
-              />
-            ))}
+          {/* drag rail: finger anywhere, actor follows */}
+          <div
+            className="relative mt-3 h-7 border-2 border-[var(--p-black)] bg-[var(--p-slate)]"
+            aria-hidden
+          >
+            <div
+              className="absolute top-1/2 -translate-y-1/2 h-4 w-4 bg-[var(--p-lime)] border-2 border-[var(--p-black)]"
+              style={{ animation: "pixel-drag 2.4s steps(8, end) infinite" }}
+            />
+          </div>
+          <div className="text-[5px] leading-relaxed text-[var(--p-silver)] mt-2 text-center">
+            &#8592; SLIDE TO DODGE AND COLLECT &#8594;
           </div>
         </div>
       )}
 
-      <div className="fixed bottom-0 left-0 right-0 p-3 bg-[var(--p-black)] border-t-[3px] border-[var(--p-shadow)]">
+      <div className="safe-bottom fixed bottom-0 left-0 right-0 px-3 pt-3 bg-[var(--p-black)] border-t-[3px] border-[var(--p-shadow)]">
         <button
           onClick={start}
           className="pixel-btn font-pixel w-full bg-[var(--p-lime)] py-4 text-[10px] leading-relaxed text-[var(--p-black)]"
