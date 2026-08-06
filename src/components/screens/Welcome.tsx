@@ -6,6 +6,7 @@ import { PixelSprite } from "@/components/retro/PixelSprite";
 import { BUILDINGS } from "@/game/retro/items";
 import { chiptune, haptics } from "@/lib/chiptune";
 import { MISSIONS_PER_RUN } from "@/lib/gameConfig";
+import { PoweredBy } from "@/components/retro/PoweredBy";
 
 // Decorative skyline strip. CSS-animated (not Framer) so it stays off the JS
 // main thread on low-end phones -- a real share of a 1200-person room.
@@ -111,6 +112,8 @@ export default function Welcome() {
           START MISSION
         </button>
       </div>
+
+      <PoweredBy height={22} className="relative z-10 mt-7" />
     </div>
   );
 }

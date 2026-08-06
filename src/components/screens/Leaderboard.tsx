@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useLeaderboard } from "@/lib/leaderboard";
 import { useGameStore } from "@/lib/store";
 import { chiptune, haptics } from "@/lib/chiptune";
+import { PoweredBy } from "@/components/retro/PoweredBy";
 
 const RANK_LABEL = ["1ST", "2ND", "3RD"];
 
@@ -132,6 +133,8 @@ export default function Leaderboard() {
       >
         PLAY AGAIN
       </button>
+
+      <PoweredBy height={20} className="mt-7 mb-2" />
     </div>
   );
 }
