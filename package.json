@@ -9,7 +9,6 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.115.0",
     "@supabase/supabase-js": "^2.112.1",
     "framer-motion": "^13.0.0",
     "html-to-image": "^1.11.13",

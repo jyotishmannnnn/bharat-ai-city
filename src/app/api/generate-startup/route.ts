@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
 import sectorsData from "@/data/sectors.json";
 import { SectorId, SectorTheme, MissionSeed } from "@/game/types";
 import { generateOfflineStartup } from "@/lib/startupTemplates";
@@ -16,22 +15,6 @@ interface Body {
   playerName?: string;
 }
 
-function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
-  return new Promise((resolve, reject) => {
-    const t = setTimeout(() => reject(new Error("timeout")), ms);
-    promise.then(
-      (v) => {
-        clearTimeout(t);
-        resolve(v);
-      },
-      (e) => {
-        clearTimeout(t);
-        reject(e);
-      }
-    );
-  });
-}
-
 export async function POST(req: NextRequest) {
   const body = (await req.json()) as Body;
   const { sector, seed, score } = body;
@@ -42,31 +25,41 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ...off, source: "offline" });
   };
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = process.env.GROQ_API_KEY;
   if (!apiKey) return fallback();
 
-  try {
-    const client = new Anthropic({ apiKey });
-    const prompt = `You are a witty startup-naming engine for a game called "Build Bharat AI City".
+  const prompt = `You are a witty startup-naming engine for a game called "Build Bharat AI City".
 Generate ONE fictional AI startup for the sector "${theme.name}".
 Context (randomly rolled this playthrough): problem="${seed.problem}", market condition="${seed.market}", opportunity="${seed.opportunity}". Player performance score: ${score}.
 Be creative, punchy, and slightly futuristic. Avoid generic names like "AI Health" or "TechCorp". Never repeat a name you'd consider cliché.
 Respond with ONLY minified JSON, no markdown, matching exactly:
 {"name":string (1-2 words, catchy, brandable),"tagline":string (<=12 words),"usp":string (<=18 words, unique selling point),"aiStack":string[] (3 short AI technique names),"businessModel":string (<=6 words),"founderArchetype":string (<=4 words, e.g. "The Relentless Builder")}`;
 
-    const resp = await withTimeout(
-      client.messages.create({
-        model: "claude-haiku-4-5-20251001",
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 6000);
+
+    const resp = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: "llama-3.3-70b-versatile",
         max_tokens: 300,
+        temperature: 0.9,
         messages: [{ role: "user", content: prompt }],
       }),
-      6000
-    );
+      signal: controller.signal,
+    });
 
-    const textBlock = resp.content.find((b) => b.type === "text");
-    if (!textBlock || textBlock.type !== "text") return fallback();
+    clearTimeout(timeout);
+    if (!resp.ok) return fallback();
 
-    const raw = textBlock.text.trim().replace(/^```json\s*|```$/g, "");
+    const data = await resp.json();
+    const text: string = data.choices?.[0]?.message?.content ?? "";
+    const raw = text.trim().replace(/^```json\s*|```$/g, "");
     const parsed = JSON.parse(raw);
     if (!parsed.name || !parsed.tagline) return fallback();
 
