@@ -13,18 +13,22 @@ import { SectorTheme } from "@/game/types";
 import { C, css, quantize, shade, PaletteIndex } from "./palette";
 import { drawText, measureText } from "./font";
 import {
-  COLLECT_SPRITES,
-  OBSTACLE_SPRITES,
-  POWERUP_SPRITES,
   PLAYER_FRAMES,
   PLAYER_HURT_FRAME,
   Sprite,
   resolveChar,
   PLAYER_SIZE,
-  ENTITY_SIZE,
   TREE,
   ANTENNA_FRAMES,
 } from "./sprites";
+import {
+  ITEMS,
+  POWERUP_ITEMS,
+  SECTOR_ITEMS,
+  ItemSprite,
+  resolveFixed,
+  ITEM_SIZE,
+} from "./items";
 
 /** Target retro width. Actual width flexes slightly to fill the viewport at a
  *  whole-number scale factor, keeping pixel density identical everywhere. */
@@ -151,6 +155,30 @@ export class RetroRenderer {
           continue;
         }
         // Run-length identical characters into a single fillRect.
+        let run = 1;
+        while (c + run < row.length && row[c + run] === ch) run++;
+        this.ctx.fillStyle = css(col);
+        this.ctx.fillRect(ox + c, oy + r, run, 1);
+        c += run;
+      }
+    }
+  }
+
+  /** Fixed-colour item sprite (Minecraft-style): colours come from the sprite
+   *  itself, not from the sector accent, so a pill always looks like a pill. */
+  private item(s: ItemSprite, x: number, y: number) {
+    const ox = Math.round(x);
+    const oy = Math.round(y);
+    for (let r = 0; r < s.length; r++) {
+      const row = s[r];
+      let c = 0;
+      while (c < row.length) {
+        const ch = row[c];
+        const col = resolveFixed(ch);
+        if (col === null) {
+          c++;
+          continue;
+        }
         let run = 1;
         while (c + run < row.length && row[c + run] === ch) run++;
         this.ctx.fillStyle = css(col);
@@ -336,30 +364,37 @@ export class RetroRenderer {
     this.dither(0, playerRowY - 1, w, 3, C.shadow, shade(accent, -2));
 
     // --- entities ---------------------------------------------------------
+    const sectorItems = SECTOR_ITEMS[theme.id];
     for (const e of snapshot.entities) {
-      const ex = Math.round(e.lane * laneW + laneW / 2 - ENTITY_SIZE / 2);
-      const ey = Math.round(e.y * h - ENTITY_SIZE / 2);
-      const tint = quantize(e.color);
+      const ex = Math.round(e.lane * laneW + laneW / 2 - ITEM_SIZE / 2);
+      const ey = Math.round(e.y * h - ITEM_SIZE / 2);
 
-      let s: Sprite;
+      let s: ItemSprite;
       if (e.kind === "collect") {
-        s = COLLECT_SPRITES[e.defIndex % COLLECT_SPRITES.length];
+        const names = sectorItems?.collect ?? [];
+        s = ITEMS[names[e.defIndex % names.length]] ?? ITEMS.CRATE;
       } else if (e.kind === "obstacle") {
-        s = OBSTACLE_SPRITES[e.defIndex % OBSTACLE_SPRITES.length];
+        const names = sectorItems?.obstacle ?? [];
+        s = ITEMS[names[e.defIndex % names.length]] ?? ITEMS.XMARK;
       } else {
         const effect = theme.powerups[e.defIndex]?.effect ?? "shield";
-        s = POWERUP_SPRITES[effect] ?? POWERUP_SPRITES.shield;
+        s = POWERUP_ITEMS[effect] ?? POWERUP_ITEMS.shield;
       }
 
-      // 1px hard drop-shadow, no blur -- replaces the old ctx.shadowBlur glow.
-      this.rect(ex + 1, ey + ENTITY_SIZE - 1, ENTITY_SIZE - 2, 1, C.black);
-      this.sprite(s, ex, ey, tint);
+      // Hard 1px contact shadow, no blur -- replaces the old shadowBlur glow.
+      this.rect(ex + 2, ey + ITEM_SIZE - 1, ITEM_SIZE - 4, 1, C.black);
 
-      // Powerups pulse via a palette swap, not a glow.
+      // Powerups sit on a blinking plate so they still read as "special"
+      // even though their art is fixed-colour rather than sector-tinted.
       if (e.kind === "powerup" && Math.floor(timeMs / 140) % 2 === 0) {
-        this.rect(ex - 1, ey - 1, ENTITY_SIZE + 2, 1, shade(tint, 2));
-        this.rect(ex - 1, ey + ENTITY_SIZE, ENTITY_SIZE + 2, 1, shade(tint, 2));
+        const glow = quantize(e.color);
+        this.rect(ex - 1, ey + 1, 1, ITEM_SIZE - 2, shade(glow, 2));
+        this.rect(ex + ITEM_SIZE, ey + 1, 1, ITEM_SIZE - 2, shade(glow, 2));
+        this.rect(ex + 1, ey - 1, ITEM_SIZE - 2, 1, shade(glow, 2));
+        this.rect(ex + 1, ey + ITEM_SIZE, ITEM_SIZE - 2, 1, shade(glow, 2));
       }
+
+      this.item(s, ex, ey);
     }
 
     // --- player -----------------------------------------------------------
