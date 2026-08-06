@@ -207,7 +207,7 @@ export default function CityCanvas({ rows, latest, mode, dim, ending }: CityCanv
     }
 
     function draw(now: number) {
-      if (!canvas) return;
+      if (!canvas || !ctx) return;
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
       clockRef.current += dt;
