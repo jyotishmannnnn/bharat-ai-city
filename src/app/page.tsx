@@ -53,8 +53,8 @@ export default function Home() {
       {/* Persistent logo bar. Lives outside AnimatePresence so it stays put
           across phase transitions instead of fading in and out on every screen. */}
       {showLogos && (
-        <header className="safe-top shrink-0 flex justify-center pt-4 pb-3">
-          <PoweredBy height={40} />
+        <header className="safe-top shrink-0">
+          <PoweredBy height={30} />
         </header>
       )}
 
