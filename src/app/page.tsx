@@ -38,12 +38,22 @@ export default function Home() {
 
   const showLogos = !HIDE_LOGOS.includes(phase);
 
+  /** Startups now resolve from a pre-generated on-device pool, so this returns
+   *  in ~0ms. Hold the overlay for a deliberate beat anyway: an instant cut from
+   *  gameplay to result gives the reveal no weight, and the overlay's rotating
+   *  copy needs a moment to read. This is a fixed, predictable pause rather than
+   *  the old open-ended wait on a network call. */
   const handleMissionComplete = async (
     result: MissionResultType,
     valuationMultiplier: number
   ) => {
     goTo("generating");
+    const startedAt = Date.now();
     const startup = await generateStartup(result, valuationMultiplier);
+    const elapsed = Date.now() - startedAt;
+    if (elapsed < 1400) {
+      await new Promise((r) => setTimeout(r, 1400 - elapsed));
+    }
     result.valuation = startup.estimatedValuationCr;
     completeMission(result, startup);
   };

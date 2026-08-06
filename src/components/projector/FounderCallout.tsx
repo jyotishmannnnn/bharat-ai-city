@@ -3,7 +3,7 @@
 // "Someone just finished" toast. Fires off the same realtime insert the
 // city canvas reacts to — no extra subscription, just a prop.
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { LeaderboardEntry } from "@/game/types";
 import { getSectorTheme } from "@/lib/store";
@@ -13,15 +13,59 @@ interface QueuedCallout {
   entry: LeaderboardEntry;
 }
 
+/** How long each callout holds the screen. */
+const DWELL_MS = 2600;
+/** Backlog cap. At the end-of-session rush founders land several per second;
+ *  without a cap the queue would run minutes behind and the projector would be
+ *  celebrating people who finished long ago. Newest wins, oldest is dropped. */
+const MAX_QUEUE = 3;
+
 export default function FounderCallout({ latest }: { latest: LeaderboardEntry | null }) {
   const [visible, setVisible] = useState<QueuedCallout | null>(null);
+  const queue = useRef<QueuedCallout[]>([]);
+  const showing = useRef(false);
+  const seen = useRef<Set<string>>(new Set());
 
+  // Enqueue only. Previously this set state directly on every new row, so a
+  // burst of finishers replaced each callout within milliseconds and nobody's
+  // name was readable.
   useEffect(() => {
-    if (!latest) return;
-    setVisible({ id: latest.id, entry: latest });
-    const t = setTimeout(() => setVisible(null), 4200);
-    return () => clearTimeout(t);
+    if (!latest || seen.current.has(latest.id)) return;
+    seen.current.add(latest.id);
+    queue.current.push({ id: latest.id, entry: latest });
+    if (queue.current.length > MAX_QUEUE) {
+      queue.current.splice(0, queue.current.length - MAX_QUEUE);
+    }
   }, [latest]);
+
+  // Drain the queue on a fixed cadence so every callout gets its full dwell.
+  useEffect(() => {
+    let stopped = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+
+    const pump = () => {
+      if (stopped) return;
+      if (!showing.current && queue.current.length > 0) {
+        const next = queue.current.shift()!;
+        showing.current = true;
+        setVisible(next);
+        timer = setTimeout(() => {
+          if (stopped) return;
+          setVisible(null);
+          showing.current = false;
+          timer = setTimeout(pump, 260); // brief gap so the exit animation reads
+        }, DWELL_MS);
+        return;
+      }
+      timer = setTimeout(pump, 200);
+    };
+
+    timer = setTimeout(pump, 200);
+    return () => {
+      stopped = true;
+      if (timer) clearTimeout(timer);
+    };
+  }, []);
 
   const sector = visible?.entry.sectors[0];
   const theme = sector ? getSectorTheme(sector) : null;

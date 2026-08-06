@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { supabase, supabaseEnabled } from "@/lib/supabaseClient";
 import { FounderProfile, LeaderboardEntry, SectorId } from "@/game/types";
 
@@ -21,20 +21,32 @@ export function computeCompositeScore(profile: FounderProfile): number {
   );
 }
 
+/** Submit with bounded retry. A dropped submission means a founder never
+ *  appears on the board or the projector, which is the worst single-player
+ *  failure at the event, so this is worth three attempts. */
 export async function submitRun(
   playerName: string,
   profile: FounderProfile,
   sectors: SectorId[]
-): Promise<void> {
-  if (!supabaseEnabled || !supabase) return;
-  await supabase.from("runs").insert({
+): Promise<boolean> {
+  if (!supabaseEnabled || !supabase) return false;
+
+  const row = {
     player_name: playerName,
     total_score: computeCompositeScore(profile),
     total_valuation_cr: profile.totalValuationCr,
     citizens_impacted: profile.citizensImpacted,
     archetype: profile.archetype,
     sectors,
-  });
+  };
+
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const { error } = await supabase.from("runs").insert(row);
+    if (!error) return true;
+    // 250ms, 750ms — short enough that the player never notices a stall
+    await new Promise((r) => setTimeout(r, 250 * Math.pow(3, attempt)));
+  }
+  return false;
 }
 
 interface RunRow {
@@ -61,40 +73,96 @@ function rowToEntry(r: RunRow): LeaderboardEntry {
   };
 }
 
-export function useLeaderboard(limit = 50) {
+/** Player-device leaderboard.
+ *
+ *  Deliberately does NOT open a realtime subscription. Supabase's free tier
+ *  caps concurrent realtime clients (commonly 200) and this hook runs on every
+ *  one of ~1200 phones. Worse, the previous version re-ran the full top-50
+ *  query on every INSERT event, so N phones watching N submissions produced
+ *  O(N^2) queries — peaking exactly when the room is watching the projector.
+ *
+ *  Instead: one fetch on mount, then a jittered poll. The jitter matters — a
+ *  fixed interval would make 1200 devices fire in lockstep. Polling pauses
+ *  while the tab is hidden.
+ *
+ *  The projector keeps its single realtime channel via useCityFeed, so the big
+ *  screen stays live. */
+export function useLeaderboard(limit = 50, pollMs = 20000) {
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
-  const [loading, setLoading] = useState(true);
+  // If Supabase is off there is nothing to wait for, so don't start in a
+  // loading state (and don't setState synchronously inside the effect).
+  const [loading, setLoading] = useState(supabaseEnabled);
+  const [error, setError] = useState(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const refresh = useCallback(async () => {
-    if (!supabaseEnabled || !supabase) {
-      setLoading(false);
-      return;
-    }
-    const { data } = await supabase
+    if (!supabaseEnabled || !supabase) return;
+    const { data, error: err } = await supabase
       .from("runs")
       .select("*")
       .order("total_score", { ascending: false })
       .limit(limit);
-    if (data) setEntries((data as RunRow[]).map(rowToEntry));
+
+    if (err) {
+      setError(true);
+    } else if (data) {
+      setEntries((data as RunRow[]).map(rowToEntry));
+      setError(false);
+    }
     setLoading(false);
   }, [limit]);
 
   useEffect(() => {
-    refresh();
-    const client = supabase;
-    if (!supabaseEnabled || !client) return;
-    const channel = client
-      .channel("runs-live")
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "runs" },
-        () => refresh()
-      )
-      .subscribe();
-    return () => {
-      client.removeChannel(channel);
-    };
-  }, [refresh]);
+    if (!supabaseEnabled) return;
+    let stopped = false;
 
-  return { entries, loading, enabled: supabaseEnabled };
+    const tick = async () => {
+      if (stopped) return;
+      if (typeof document === "undefined" || !document.hidden) {
+        await refresh();
+      }
+      if (stopped) return;
+      // +/-40% jitter so 1200 devices never align on the same tick
+      timerRef.current = setTimeout(tick, pollMs * (0.8 + Math.random() * 0.4));
+    };
+
+    // Even the FIRST fetch is jittered. Players reach this screen in a burst
+    // once the presenter calls time, and an un-staggered mount fetch from ~1200
+    // devices is a thundering herd. Also keeps setState out of the effect body.
+    timerRef.current = setTimeout(tick, Math.random() * 400);
+
+    return () => {
+      stopped = true;
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, [refresh, pollMs]);
+
+  return { entries, loading, error, enabled: supabaseEnabled, refresh };
+}
+
+/** Exact rank for a score, for players outside the visible top N.
+ *  Uses a HEAD count rather than fetching rows, so it stays cheap at scale. */
+export function useMyRank(score: number | null) {
+  const [rank, setRank] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!supabaseEnabled || !supabase || score === null) return;
+    let cancelled = false;
+
+    void (async () => {
+      const { count, error } = await supabase!
+        .from("runs")
+        .select("*", { count: "exact", head: true })
+        .gt("total_score", score);
+      if (!cancelled && !error && typeof count === "number") {
+        setRank(count + 1);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [score]);
+
+  return rank;
 }

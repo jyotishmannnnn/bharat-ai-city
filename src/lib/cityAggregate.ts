@@ -154,11 +154,17 @@ function rowToEntry(r: RunRow): LeaderboardEntry {
 export function useCityFeed() {
   const [rows, setRows] = useState<LeaderboardEntry[]>([]);
   const [latest, setLatest] = useState<LeaderboardEntry | null>(null);
+  const [connected, setConnected] = useState(false);
   const seenIds = useRef<Set<string>>(new Set());
+  /** Newest created_at seen, so reconciliation only asks for what it missed. */
+  const watermark = useRef<string | null>(null);
 
   const append = useCallback((entry: LeaderboardEntry) => {
     if (seenIds.current.has(entry.id)) return;
     seenIds.current.add(entry.id);
+    if (!watermark.current || entry.createdAt > watermark.current) {
+      watermark.current = entry.createdAt;
+    }
     setRows((prev) => {
       const next = prev.length >= MAX_FOUNDERS ? prev.slice(1) : prev;
       return [...next, entry];
@@ -169,35 +175,81 @@ export function useCityFeed() {
   useEffect(() => {
     if (!supabaseEnabled || !supabase) return;
     const client = supabase;
+    let stopped = false;
+    let channel: ReturnType<typeof client.channel> | null = null;
+    let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+    let pollTimer: ReturnType<typeof setTimeout> | null = null;
 
-    (async () => {
-      const { data } = await client
+    /** Pull anything newer than the watermark. Covers two failure modes that
+     *  would otherwise silently freeze the projector for the whole event:
+     *  a websocket drop, and INSERT events delivered while reconnecting. */
+    const reconcile = async () => {
+      let q = client
         .from("runs")
         .select("*")
         .order("created_at", { ascending: true })
         .limit(MAX_FOUNDERS);
-      if (data) {
+      if (watermark.current) q = q.gt("created_at", watermark.current);
+
+      const { data } = await q;
+      if (!stopped && data) {
         for (const r of data as RunRow[]) append(rowToEntry(r));
       }
-    })();
+    };
 
-    const channel = client
-      .channel("projector-city")
-      .on(
-        "postgres_changes",
-        { event: "INSERT", schema: "public", table: "runs" },
-        (payload) => {
-          append(rowToEntry(payload.new as RunRow));
-        }
-      )
-      .subscribe();
+    const subscribe = () => {
+      if (stopped) return;
+      channel = client
+        .channel(`projector-city-${Date.now()}`)
+        .on(
+          "postgres_changes",
+          { event: "INSERT", schema: "public", table: "runs" },
+          (payload) => append(rowToEntry(payload.new as RunRow))
+        )
+        .subscribe((status) => {
+          if (stopped) return;
+          if (status === "SUBSCRIBED") {
+            setConnected(true);
+            // Catch up on anything that landed while we were away.
+            void reconcile();
+          } else if (
+            status === "CHANNEL_ERROR" ||
+            status === "TIMED_OUT" ||
+            status === "CLOSED"
+          ) {
+            setConnected(false);
+            if (channel) {
+              void client.removeChannel(channel);
+              channel = null;
+            }
+            reconnectTimer = setTimeout(subscribe, 2000);
+          }
+        });
+    };
+
+    // Safety net: even with a healthy socket, poll periodically so a dropped
+    // event can never cost a founder their building on the big screen.
+    const poll = () => {
+      pollTimer = setTimeout(async () => {
+        if (stopped) return;
+        await reconcile();
+        poll();
+      }, 15000);
+    };
+
+    void reconcile();
+    subscribe();
+    poll();
 
     return () => {
-      client.removeChannel(channel);
+      stopped = true;
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+      if (pollTimer) clearTimeout(pollTimer);
+      if (channel) void client.removeChannel(channel);
     };
   }, [append]);
 
-  return { rows, latest, enabled: supabaseEnabled };
+  return { rows, latest, connected, enabled: supabaseEnabled };
 }
 
 export function districtFor(sector: SectorId): DistrictInfo {

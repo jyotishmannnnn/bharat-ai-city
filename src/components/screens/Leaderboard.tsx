@@ -1,16 +1,20 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useLeaderboard } from "@/lib/leaderboard";
+import { useLeaderboard, useMyRank, computeCompositeScore } from "@/lib/leaderboard";
 import { useGameStore } from "@/lib/store";
 import { chiptune, haptics } from "@/lib/chiptune";
 
 const RANK_LABEL = ["1ST", "2ND", "3RD"];
 
 export default function Leaderboard() {
-  const { entries, loading, enabled } = useLeaderboard();
+  const { entries, loading, enabled, refresh } = useLeaderboard();
   const playerName = useGameStore((s) => s.playerName);
+  const profile = useGameStore((s) => s.founderProfile);
   const restart = useGameStore((s) => s.restart);
+
+  const myScore = profile ? computeCompositeScore(profile) : null;
+  const myRank = useMyRank(myScore);
 
   // Track rank movement so a live change is visible instead of silent.
   const prevRanks = useRef<Map<string, number>>(new Map());
@@ -112,14 +116,35 @@ export default function Leaderboard() {
         </div>
       )}
 
-      {/* Removes the "I don't exist" feeling for players outside the visible top set. */}
-      {myIndex === -1 && entries.length > 0 && (
-        <div className="pixel-panel bg-[var(--p-shadow)] px-3 py-2.5 mt-3">
-          <div className="text-[6px] leading-[1.8] text-[var(--p-silver)] text-center">
-            YOU&apos;RE ON THE BOARD BELOW THE TOP {entries.length}
+      {/* Exact rank for players outside the visible top N -- removes the
+          "I don't exist" feeling for the ~1150 people not in the top 50. */}
+      {myIndex === -1 && myRank !== null && (
+        <div
+          className="pixel-panel px-3 py-3 mt-3"
+          style={{ background: "var(--p-purple)" }}
+        >
+          <div className="text-[6px] leading-relaxed text-[var(--p-ice)] text-center">
+            YOUR RANK
+          </div>
+          <div className="text-[14px] leading-relaxed text-[var(--p-white)] text-center mt-2 tabular-nums">
+            #{myRank}
+          </div>
+          <div className="text-[6px] leading-relaxed text-[var(--p-ice)] text-center mt-2">
+            {playerName.toUpperCase()} / {myScore} PTS
           </div>
         </div>
       )}
+
+      <button
+        onClick={() => {
+          chiptune.init();
+          chiptune.uiTap();
+          void refresh();
+        }}
+        className="pixel-btn font-pixel w-full mt-4 bg-[var(--p-slate)] py-3 text-[8px] leading-relaxed text-[var(--p-white)]"
+      >
+        REFRESH BOARD
+      </button>
 
       <button
         onClick={() => {
