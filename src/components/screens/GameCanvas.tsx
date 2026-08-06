@@ -1,10 +1,23 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import eventsData from "@/data/events.json";
-import { ArcadeEngine, LANES, MISSION_DURATION_MS, EVENT_TIMES_MS, EngineSnapshot } from "@/game/engine";
-import { SectorTheme, MissionSeed, MissionResult, RandomEventDef, RandomEventChoice } from "@/game/types";
+import {
+  ArcadeEngine,
+  LANES,
+  MISSION_DURATION_MS,
+  EVENT_TIMES_MS,
+  EngineSnapshot,
+} from "@/game/engine";
+import {
+  SectorTheme,
+  MissionSeed,
+  MissionResult,
+  RandomEventDef,
+  RandomEventChoice,
+} from "@/game/types";
+import { RetroRenderer } from "@/game/retro/renderer";
+import { chiptune, haptics } from "@/lib/chiptune";
 
 const EVENTS = eventsData as RandomEventDef[];
 
@@ -16,6 +29,7 @@ interface Props {
 
 export default function GameCanvas({ theme, seed, onComplete }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const rendererRef = useRef<RetroRenderer | null>(null);
   const engineRef = useRef<ArcadeEngine | null>(null);
   const rafRef = useRef<number>(0);
   const lastTsRef = useRef<number>(0);
@@ -24,19 +38,69 @@ export default function GameCanvas({ theme, seed, onComplete }: Props) {
   const livesRef = useRef(3);
   const pausedRef = useRef(false);
 
-  const [snapshot, setSnapshot] = useState<EngineSnapshot | null>(null);
+  // Latest snapshot lives in a ref, not state: the HUD is now drawn on the
+  // pixel canvas, so we no longer re-render React 60x/second.
+  const snapRef = useRef<EngineSnapshot | null>(null);
+  const seenTextIds = useRef<Set<number>>(new Set());
+  const lastComboRef = useRef(0);
+
   const [activeEvent, setActiveEvent] = useState<RandomEventDef | null>(null);
   const [countIn, setCountIn] = useState(4); // 4,3,2,1 -> shows "3,2,1,GO!" then hides
+  const [muted, setMuted] = useState(false);
 
   useEffect(() => {
     engineRef.current = new ArcadeEngine(theme);
   }, [theme]);
 
-  // countdown before play starts
+  // --- retro canvas setup -------------------------------------------------
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const renderer = new RetroRenderer(canvas);
+    rendererRef.current = renderer;
+
+    const applySize = () => {
+      const rect = canvas.getBoundingClientRect();
+      renderer.resize(rect.width, rect.height);
+    };
+    applySize();
+
+    const ro = new ResizeObserver(applySize);
+    ro.observe(canvas);
+    return () => {
+      ro.disconnect();
+      rendererRef.current = null;
+    };
+  }, []);
+
+  // --- audio lifecycle ----------------------------------------------------
+  useEffect(() => {
+    chiptune.init();
+    return () => chiptune.stopBgm();
+  }, []);
+
+  useEffect(() => {
+    if (countIn > 0) return;
+    chiptune.startBgm();
+    return () => chiptune.stopBgm();
+  }, [countIn]);
+
+  // countdown before play starts (timing unchanged: 700ms per beat)
   useEffect(() => {
     if (countIn <= 0) return;
     const t = setTimeout(() => setCountIn((c) => c - 1), 700);
     return () => clearTimeout(t);
+  }, [countIn]);
+
+  useEffect(() => {
+    if (countIn <= 0) return;
+    if (countIn === 1) {
+      chiptune.go();
+      haptics.medium();
+    } else {
+      chiptune.countdownTick();
+      haptics.light();
+    }
   }, [countIn]);
 
   const finish = useCallback(() => {
@@ -53,8 +117,48 @@ export default function GameCanvas({ theme, seed, onComplete }: Props) {
       durationMs: MISSION_DURATION_MS,
       valuation: 0,
     };
+    chiptune.stopBgm();
+    chiptune.fanfare();
+    haptics.pattern([20, 40, 20, 40, 60]);
     onComplete(result, valuationMultiplierRef.current, livesRef.current);
   }, [onComplete, seed, theme.id]);
+
+  /** Turn engine-emitted floating texts into SFX, haptics and pixel particles.
+   *  Read-only: the engine is never told the renderer or audio exist. */
+  const reactToEvents = useCallback((snap: EngineSnapshot) => {
+    const renderer = rendererRef.current;
+    for (const f of snap.floatingTexts) {
+      if (seenTextIds.current.has(f.id)) continue;
+      seenTextIds.current.add(f.id);
+
+      if (f.text === "BLOCKED") {
+        chiptune.blocked();
+        haptics.medium();
+        renderer?.burst("powerup", f.lane, f.color);
+      } else if (f.text.startsWith("+")) {
+        chiptune.collect(snap.combo);
+        haptics.light();
+        renderer?.burst("collect", f.lane, f.color);
+      } else if (f.text.startsWith("-")) {
+        chiptune.hit();
+        haptics.heavy();
+        renderer?.burst("hit", f.lane, f.color);
+      } else {
+        chiptune.powerup();
+        haptics.pattern([15, 30, 15]);
+        renderer?.burst("powerup", f.lane, f.color);
+      }
+    }
+    if (seenTextIds.current.size > 600) seenTextIds.current.clear();
+
+    // Combo milestones get their own stronger buzz.
+    if (snap.combo !== lastComboRef.current) {
+      if (snap.combo > 0 && snap.combo % 5 === 0 && snap.combo > lastComboRef.current) {
+        haptics.pattern([12, 25, 12]);
+      }
+      lastComboRef.current = snap.combo;
+    }
+  }, []);
 
   useEffect(() => {
     if (countIn > 0) return;
@@ -66,9 +170,11 @@ export default function GameCanvas({ theme, seed, onComplete }: Props) {
       const dt = Math.min(48, ts - lastTsRef.current);
       lastTsRef.current = ts;
       const engine = engineRef.current;
+
       if (engine && !pausedRef.current) {
         const snap = engine.tick(dt, ts);
-        setSnapshot(snap);
+        snapRef.current = snap;
+        reactToEvents(snap);
 
         EVENT_TIMES_MS.forEach((t, idx) => {
           if (snap.elapsedMs >= t && !firedEventsRef.current.has(idx)) {
@@ -76,6 +182,8 @@ export default function GameCanvas({ theme, seed, onComplete }: Props) {
             pausedRef.current = true;
             const ev = EVENTS[Math.floor(Math.random() * EVENTS.length)];
             setActiveEvent(ev);
+            chiptune.uiTap();
+            haptics.medium();
           }
         });
 
@@ -85,90 +193,28 @@ export default function GameCanvas({ theme, seed, onComplete }: Props) {
           return;
         }
       }
+
+      // Render every frame -- while paused, dt=0 freezes particles but keeps
+      // the modal sitting over a live-looking scene.
+      const renderer = rendererRef.current;
+      if (renderer && snapRef.current) {
+        renderer.render(snapRef.current, theme, ts, pausedRef.current ? 0 : dt);
+      }
+
       rafRef.current = requestAnimationFrame(loop);
     };
+
     rafRef.current = requestAnimationFrame(loop);
     return () => {
       stopped = true;
       cancelAnimationFrame(rafRef.current);
     };
-  }, [countIn, finish]);
+  }, [countIn, finish, reactToEvents, theme]);
 
-  // canvas draw
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas || !snapshot) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    const dpr = Math.min(2, window.devicePixelRatio || 1);
-    const w = canvas.clientWidth;
-    const h = canvas.clientHeight;
-    if (canvas.width !== w * dpr || canvas.height !== h * dpr) {
-      canvas.width = w * dpr;
-      canvas.height = h * dpr;
-    }
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.clearRect(0, 0, w, h);
-
-    const shakeX = snapshot.screenShake ? (Math.random() - 0.5) * 10 * snapshot.screenShake : 0;
-    ctx.save();
-    ctx.translate(shakeX, 0);
-
-    const laneW = w / LANES;
-
-    // lane guides
-    for (let i = 0; i <= LANES; i++) {
-      ctx.strokeStyle = "rgba(255,255,255,0.06)";
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(i * laneW, 0);
-      ctx.lineTo(i * laneW, h);
-      ctx.stroke();
-    }
-
-    // player row indicator
-    ctx.fillStyle = "rgba(255,255,255,0.05)";
-    ctx.fillRect(0, h * 0.86, w, h * 0.12);
-
-    // entities
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    for (const e of snapshot.entities) {
-      const x = e.lane * laneW + laneW / 2;
-      const y = e.y * h;
-      ctx.font = `${Math.round(laneW * 0.55)}px sans-serif`;
-      ctx.shadowColor = e.color;
-      ctx.shadowBlur = 14;
-      ctx.fillText(e.glyph, x, y);
-      ctx.shadowBlur = 0;
-    }
-
-    // player
-    const px = snapshot.playerLane * laneW + laneW / 2;
-    const py = h * 0.92;
-    ctx.font = `${Math.round(laneW * 0.7)}px sans-serif`;
-    ctx.shadowColor = snapshot.shieldActive ? "#60A5FA" : theme.accent;
-    ctx.shadowBlur = snapshot.shieldActive ? 28 : 16;
-    ctx.fillText(theme.playerGlyph, px, py);
-    ctx.shadowBlur = 0;
-
-    // floating texts
-    ctx.font = "bold 18px sans-serif";
-    for (const f of snapshot.floatingTexts) {
-      ctx.globalAlpha = Math.max(0, f.life);
-      ctx.fillStyle = f.color;
-      ctx.fillText(f.text, f.lane * laneW + laneW / 2, f.y * h);
-    }
-    ctx.globalAlpha = 1;
-
-    ctx.restore();
-  }, [snapshot, theme]);
-
-  // touch / click controls: tap left half / right half, or swipe
+  // touch / click controls -- behaviour identical to the pre-retro build
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    let touchStartX: number | null = null;
 
     const handleTap = (clientX: number) => {
       const rect = canvas.getBoundingClientRect();
@@ -180,7 +226,7 @@ export default function GameCanvas({ theme, seed, onComplete }: Props) {
     };
 
     const onPointerDown = (ev: PointerEvent) => {
-      touchStartX = ev.clientX;
+      chiptune.init(); // iOS unlocks audio only inside a gesture
       handleTap(ev.clientX);
     };
     canvas.addEventListener("pointerdown", onPointerDown);
@@ -211,113 +257,76 @@ export default function GameCanvas({ theme, seed, onComplete }: Props) {
     if (choice.livesDelta) {
       livesRef.current = Math.max(0, livesRef.current + choice.livesDelta);
     }
+    chiptune.uiTap();
+    haptics.light();
     setActiveEvent(null);
     pausedRef.current = false;
     lastTsRef.current = 0;
   };
 
-  const remainingSec = snapshot ? Math.ceil(snapshot.remainingMs / 1000) : 45;
+  const toggleMute = () => {
+    chiptune.init();
+    setMuted(chiptune.toggleMute());
+  };
 
   return (
     <div
-      className="relative w-full h-full overflow-hidden touch-none select-none"
-      style={{
-        background: `linear-gradient(160deg, ${theme.gradient[0]}, ${theme.gradient[1]})`,
-      }}
+      className="relative w-full h-full overflow-hidden touch-none select-none bg-[#0f0f17]"
     >
-      {/* HUD */}
-      <div className="absolute top-0 left-0 right-0 z-20 flex items-center justify-between px-4 py-3 text-white">
-        <div className="flex items-center gap-2 bg-black/30 rounded-full px-3 py-1 backdrop-blur">
-          <span className="text-lg">⏱</span>
-          <span className="font-bold tabular-nums">{remainingSec}s</span>
-        </div>
-        <div className="flex items-center gap-2 bg-black/30 rounded-full px-4 py-1 backdrop-blur">
-          <span className="text-lg">✨</span>
-          <span className="font-extrabold text-xl tabular-nums">{snapshot?.score ?? 0}</span>
-        </div>
-      </div>
+      <canvas ref={canvasRef} className="pixel-canvas w-full h-full block" />
 
-      <AnimatePresence>
-        {snapshot?.activePowerupLabel && (
-          <motion.div
-            initial={{ opacity: 0, y: -10, scale: 0.8 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.8 }}
-            className="absolute top-14 left-1/2 -translate-x-1/2 z-20 px-4 py-1 rounded-full text-sm font-bold text-black shadow-lg"
-            style={{ background: theme.accent }}
-          >
-            {snapshot.activePowerupLabel}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {snapshot && snapshot.combo >= 3 && (
-        <motion.div
-          key={snapshot.combo}
-          initial={{ scale: 1.4, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          className="absolute top-24 left-1/2 -translate-x-1/2 z-20 text-yellow-300 font-black text-lg drop-shadow"
-        >
-          {snapshot.combo}x COMBO!
-        </motion.div>
-      )}
-
-      <canvas ref={canvasRef} className="w-full h-full block" />
+      {/* mute toggle -- bottom corner so it never overlaps the canvas HUD */}
+      <button
+        onClick={toggleMute}
+        aria-label={muted ? "Unmute" : "Mute"}
+        className="pixel-btn font-pixel absolute bottom-3 right-3 z-30 bg-[#2c2c46] text-[#d4d4e4] text-[8px] px-2 py-1.5"
+      >
+        {muted ? "SND OFF" : "SND ON"}
+      </button>
 
       {/* countdown overlay */}
-      <AnimatePresence>
-        {countIn > 0 && (
-          <motion.div
+      {countIn > 0 && (
+        <div className="absolute inset-0 z-30 flex items-center justify-center bg-[#0f0f17]/80">
+          <span
             key={countIn}
-            initial={{ scale: 0.4, opacity: 0 }}
-            animate={{ scale: 1.2, opacity: 1 }}
-            exit={{ scale: 2, opacity: 0 }}
-            className="absolute inset-0 z-30 flex items-center justify-center bg-black/60"
+            className="font-pixel text-[#f7e04c] text-5xl pixel-blink"
+            style={{ textShadow: "4px 4px 0 #0f0f17" }}
           >
-            <span className="text-white text-8xl font-black">
-              {countIn === 1 ? "GO!" : countIn - 1}
-            </span>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            {countIn === 1 ? "GO!" : countIn - 1}
+          </span>
+        </div>
+      )}
 
       {/* random event modal */}
-      <AnimatePresence>
-        {activeEvent && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="absolute inset-0 z-40 flex items-center justify-center bg-black/70 px-5"
-          >
-            <motion.div
-              initial={{ y: 40, scale: 0.9, opacity: 0 }}
-              animate={{ y: 0, scale: 1, opacity: 1 }}
-              transition={{ type: "spring", damping: 16 }}
-              className="w-full max-w-sm rounded-3xl bg-white p-5 shadow-2xl"
-            >
-              <div className="text-4xl mb-2">{activeEvent.icon}</div>
-              <h3 className="text-xl font-black text-slate-900">{activeEvent.title}</h3>
-              <p className="text-sm text-slate-500 mb-4">
-                {activeEvent.flavor.replace("{sector}", theme.name)}
-              </p>
-              <div className="flex flex-col gap-2">
-                {activeEvent.choices.map((c) => (
-                  <button
-                    key={c.label}
-                    onClick={() => handleChoice(c)}
-                    className="text-left rounded-xl border-2 border-slate-100 hover:border-slate-300 active:scale-[0.98] transition px-4 py-2.5"
-                    style={{ borderColor: theme.accent + "40" }}
-                  >
-                    <div className="font-bold text-slate-900">{c.label}</div>
-                    <div className="text-xs text-slate-500">{c.description}</div>
-                  </button>
-                ))}
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {activeEvent && (
+        <div className="absolute inset-0 z-40 flex items-center justify-center bg-[#0f0f17]/85 px-4">
+          <div className="pixel-panel font-pixel w-full max-w-sm bg-[#1b1b2e] p-4">
+            <div className="text-3xl mb-2">{activeEvent.icon}</div>
+            <h3 className="text-[11px] leading-relaxed text-[#f7e04c] mb-2">
+              {activeEvent.title.toUpperCase()}
+            </h3>
+            <p className="text-[8px] leading-relaxed text-[#9a9ab5] mb-4">
+              {activeEvent.flavor.replace("{sector}", theme.name)}
+            </p>
+            <div className="flex flex-col gap-2.5">
+              {activeEvent.choices.map((c) => (
+                <button
+                  key={c.label}
+                  onClick={() => handleChoice(c)}
+                  className="pixel-btn text-left bg-[#2c2c46] px-3 py-2.5"
+                >
+                  <div className="text-[9px] leading-relaxed text-[#d4d4e4]">
+                    {c.label.toUpperCase()}
+                  </div>
+                  <div className="text-[7px] leading-relaxed text-[#6b6b8c] mt-1">
+                    {c.description}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

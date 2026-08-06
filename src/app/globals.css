@@ -27,3 +27,51 @@ html, body {
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior: none;
 }
+
+/* ---------------------------------------------------------------- retro --- */
+
+/* Nearest-neighbour upscaling of the low-res arcade backbuffer. Without this
+   the browser bilinear-filters the canvas and every sprite goes soft. */
+.pixel-canvas {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  -ms-interpolation-mode: nearest-neighbor;
+}
+
+.font-pixel {
+  font-family: var(--font-pixel), "Courier New", monospace;
+  letter-spacing: 0.02em;
+}
+
+/* Hard-edged panel: no border radius, no blur, chunky offset shadow. */
+.pixel-panel {
+  border: 3px solid #0f0f17;
+  box-shadow: 4px 4px 0 0 #0f0f17;
+  border-radius: 0;
+}
+
+.pixel-btn {
+  border: 3px solid #0f0f17;
+  box-shadow: 3px 3px 0 0 #0f0f17;
+  border-radius: 0;
+  transition: transform 60ms steps(2, end), box-shadow 60ms steps(2, end);
+}
+
+.pixel-btn:active {
+  transform: translate(3px, 3px);
+  box-shadow: 0 0 0 0 #0f0f17;
+}
+
+/* Stepped (non-smooth) blink, the way an NES would do it. */
+@keyframes pixel-blink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+.pixel-blink {
+  animation: pixel-blink 0.5s steps(1, end) infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pixel-blink { animation: none; }
+}
