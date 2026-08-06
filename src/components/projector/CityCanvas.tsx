@@ -1,23 +1,24 @@
 "use client";
 
-// The shared Bharat AI City renderer for /projector.
+// Pixel-art renderer for the auditorium screen.
 //
-// Deliberately a single <canvas>, not 1200 DOM nodes: every founder's
-// building is a cheap fillText/glow draw call, so the auditorium's full
-// capacity (1200 founders x up to 3 sectors each) redraws at 60fps. React
-// only re-renders this component when `rows`/`mode` change identity (i.e.
-// on a new insert or a presenter keypress) — the actual animation (camera,
-// traffic, lights, trees, drones) runs entirely inside one rAF loop that
-// never touches React state.
+// The backing store is a real 480x270 buffer that the browser upscales with
+// image-rendering:pixelated, so a 1080p projector draws ~130k pixels per frame
+// no matter how many founders are in the room. Same palette, font and building
+// sprites as the phone game, so the big screen and the phones look like one
+// product.
+//
+// A founder is a tower, not a sprite: at capacity there are ~2400 buildings
+// across 10 districts, which no 16x16 sprite grid could show. Each district
+// keeps one landmark sprite for identity and fills its plot with 3px towers
+// whose height scales with valuation.
 
 import { useEffect, useMemo, useRef } from "react";
 import { LeaderboardEntry, SectorId } from "@/game/types";
-import {
-  Building,
-  DISTRICTS,
-  buildingsByDistrict,
-  themeFor,
-} from "@/lib/cityAggregate";
+import { Building, DISTRICTS, buildingsByDistrict } from "@/lib/cityAggregate";
+import { C, css, quantize, shade, PaletteIndex } from "@/game/retro/palette";
+import { drawText, measureText } from "@/game/retro/font";
+import { BUILDINGS, resolveFixed, ItemSprite } from "@/game/retro/items";
 
 export type PresenterMode =
   | "auto"
@@ -35,13 +36,21 @@ interface CityCanvasProps {
   ending?: boolean;
 }
 
-const WORLD_W = 2600;
-const WORLD_H = 1500;
+/** Backbuffer. 480x270 is exactly 1/4 of 1080p, so on a standard projector every
+ *  retro pixel is a clean 4x4 block. */
+const VW = 480;
+const VH = 270;
+
 const COLS = 5;
-const GROWS = 2;
-const CELL_PAD = 26;
-const BUILDING_CELL = 30;
-const OVERFLOW_CAP = 260;
+const ROWS = 2;
+const HUD_TOP = 34; // reserved for the metrics strip overlay
+const CELL_W = VW / COLS;
+const CELL_H = (VH - HUD_TOP) / ROWS;
+const PAD = 3;
+
+const TOWER_W = 3;
+const TOWER_GAP = 1;
+const TOWER_MAX_H = 13;
 
 interface Cell {
   district: (typeof DISTRICTS)[number];
@@ -51,40 +60,24 @@ interface Cell {
   h: number;
   cx: number;
   cy: number;
+  /** y of the ground line towers stand on */
+  groundY: number;
 }
 
-function layoutCells(): Cell[] {
-  const cellW = WORLD_W / COLS;
-  const cellH = WORLD_H / GROWS;
-  return DISTRICTS.map((district, i) => {
-    const col = i % COLS;
-    const row = Math.floor(i / COLS);
-    const x = col * cellW + CELL_PAD;
-    const y = row * cellH + CELL_PAD;
-    const w = cellW - CELL_PAD * 2;
-    const h = cellH - CELL_PAD * 2;
-    return { district, x, y, w, h, cx: x + w / 2, cy: y + h / 2 };
-  });
-}
-
-const CELLS = layoutCells();
+const CELLS: Cell[] = DISTRICTS.map((district, i) => {
+  const col = i % COLS;
+  const row = Math.floor(i / COLS);
+  const x = Math.round(col * CELL_W + PAD);
+  const y = Math.round(HUD_TOP + row * CELL_H + PAD);
+  const w = Math.round(CELL_W - PAD * 2);
+  const h = Math.round(CELL_H - PAD * 2);
+  return { district, x, y, w, h, cx: x + w / 2, cy: y + h / 2, groundY: y + h - 6 };
+});
 
 function cellFor(sector: SectorId): Cell {
   return CELLS.find((c) => c.district.id === sector) ?? CELLS[0];
 }
 
-function buildingPos(cell: Cell, index: number): { x: number; y: number } {
-  const cols = Math.max(1, Math.floor(cell.w / BUILDING_CELL));
-  const col = index % cols;
-  const row = Math.floor(index / cols);
-  const x = cell.x + BUILDING_CELL / 2 + col * BUILDING_CELL;
-  const y = cell.y + cell.h - BUILDING_CELL / 2 - row * BUILDING_CELL;
-  return { x, y };
-}
-
-/** Stable pseudo-random in [0,1) seeded from a string — used so a given
- * building/tree/drone always jitters the same way across frames instead of
- * flickering randomly. */
 function seeded(seed: string): number {
   let h = 0;
   for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
@@ -97,28 +90,15 @@ interface Camera {
   zoom: number;
 }
 
-function fitAllCamera(): Camera {
-  return { x: WORLD_W / 2, y: WORLD_H / 2, zoom: 1 };
-}
-
-const AMBIENT_TREES = Array.from({ length: 36 }, (_, i) => {
-  // scatter along the street margins between district rows/cols, not on top of buildings
-  const laneVertical = i % 2 === 0;
-  const t = seeded(`tree-${i}`);
-  return laneVertical
-    ? { x: (Math.floor(i / 2) % (COLS + 1)) * (WORLD_W / COLS), y: t * WORLD_H }
-    : { x: t * WORLD_W, y: WORLD_H / 2 };
-});
-
-const AMBIENT_DRONES = Array.from({ length: 6 }, (_, i) => ({
-  seed: `drone-${i}`,
-  laneY: 60 + i * 55,
-  speed: 0.02 + seeded(`speed-${i}`) * 0.02,
+const STARS = Array.from({ length: 70 }, (_, i) => ({
+  x: Math.floor(seeded(`sx${i}`) * VW),
+  y: Math.floor(seeded(`sy${i}`) * HUD_TOP * 1.6),
+  bright: seeded(`sb${i}`) > 0.7,
 }));
 
 export default function CityCanvas({ rows, latest, mode, dim, ending }: CityCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const cameraRef = useRef<Camera>(fitAllCamera());
+  const cameraRef = useRef<Camera>({ x: VW / 2, y: VH / 2, zoom: 1 });
   const autopilotPhaseRef = useRef<"pan" | "focusNewest" | "overview">("overview");
   const phaseStartRef = useRef(0);
   const clockRef = useRef(0);
@@ -141,45 +121,57 @@ export default function CityCanvas({ rows, latest, mode, dim, ending }: CityCanv
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+    const maybeCtx = canvas.getContext("2d", { alpha: false });
+    if (!maybeCtx) return;
+    // Re-bind as non-nullable: TS narrowing does not reach into the nested
+    // draw()/drawDistrict() function declarations below, which would otherwise
+    // produce dozens of "possibly null" errors.
+    const ctx: CanvasRenderingContext2D = maybeCtx;
+
+    canvas.width = VW;
+    canvas.height = VH;
+    ctx.imageSmoothingEnabled = false;
 
     let raf = 0;
     let last = performance.now();
 
-    function resize() {
-      if (!canvas) return;
-      const dpr = Math.min(2, window.devicePixelRatio || 1);
-      canvas.width = window.innerWidth * dpr;
-      canvas.height = window.innerHeight * dpr;
-      canvas.style.width = "100%";
-      canvas.style.height = "100%";
-    }
-    resize();
-    window.addEventListener("resize", resize);
+    const rect = (x: number, y: number, w: number, h: number, col: PaletteIndex) => {
+      ctx.fillStyle = css(col);
+      ctx.fillRect(Math.round(x), Math.round(y), Math.max(1, Math.round(w)), Math.max(1, Math.round(h)));
+    };
+
+    const sprite = (s: ItemSprite, ox: number, oy: number) => {
+      for (let r = 0; r < s.length; r++) {
+        const row = s[r];
+        let c = 0;
+        while (c < row.length) {
+          const ch = row[c];
+          const col = resolveFixed(ch);
+          if (col === null) { c++; continue; }
+          let run = 1;
+          while (c + run < row.length && row[c + run] === ch) run++;
+          ctx.fillStyle = css(col);
+          ctx.fillRect(Math.round(ox) + c, Math.round(oy) + r, run, 1);
+          c += run;
+        }
+      }
+    };
 
     function targetCameraFor(nowSec: number): Camera {
       if (mode === "topDistrict" && topDistrictId) {
         const cell = cellFor(topDistrictId);
-        return { x: cell.cx, y: cell.cy, zoom: 2.1 };
+        return { x: cell.cx, y: cell.cy, zoom: 2 };
       }
       if (mode === "latest" && latest) {
         const sector = latest.sectors[0];
         if (sector) {
           const cell = cellFor(sector);
-          const list = grouped[sector] ?? [];
-          const b = list[list.length - 1];
-          const pos = b
-            ? buildingPos(cell, Math.min(b.districtIndex, OVERFLOW_CAP - 1))
-            : { x: cell.cx, y: cell.cy };
-          return { x: pos.x, y: pos.y, zoom: 2.6 };
+          return { x: cell.cx, y: cell.cy, zoom: 2 };
         }
       }
       if (mode === "overview" || mode === "leaderboard" || mode === "stats") {
-        const breathe = 1 + Math.sin(nowSec * 0.15) * 0.03;
-        return { x: WORLD_W / 2, y: WORLD_H / 2, zoom: breathe };
+        return { x: VW / 2, y: VH / 2, zoom: 1 };
       }
-      // auto: internal autopilot cycling through pan -> focus newest -> overview
       const elapsed = nowSec - phaseStartRef.current;
       const phase = autopilotPhaseRef.current;
       if (phase === "pan" && elapsed > 9) {
@@ -188,7 +180,7 @@ export default function CityCanvas({ rows, latest, mode, dim, ending }: CityCanv
       } else if (phase === "focusNewest" && elapsed > 6) {
         autopilotPhaseRef.current = "overview";
         phaseStartRef.current = nowSec;
-      } else if (phase === "overview" && elapsed > 12) {
+      } else if (phase === "overview" && elapsed > 14) {
         autopilotPhaseRef.current = "pan";
         phaseStartRef.current = nowSec;
       }
@@ -196,18 +188,71 @@ export default function CityCanvas({ rows, latest, mode, dim, ending }: CityCanv
         const t = elapsed / 9;
         const idx = Math.floor(t * DISTRICTS.length) % DISTRICTS.length;
         const cell = cellFor(DISTRICTS[idx].id);
-        return { x: cell.cx, y: cell.cy, zoom: 1.6 };
+        return { x: cell.cx, y: cell.cy, zoom: 2 };
       }
       if (autopilotPhaseRef.current === "focusNewest" && latest) {
         const sector = latest.sectors[0];
         const cell = sector ? cellFor(sector) : null;
-        return cell ? { x: cell.cx, y: cell.cy, zoom: 2.2 } : fitAllCamera();
+        if (cell) return { x: cell.cx, y: cell.cy, zoom: 2 };
       }
-      return { x: WORLD_W / 2, y: WORLD_H / 2, zoom: ending ? 0.92 : 1 };
+      return { x: VW / 2, y: VH / 2, zoom: 1 };
+    }
+
+    function drawDistrict(cell: Cell, list: Building[], t: number) {
+      const accent = quantize(cell.district.accent);
+      const count = list.length;
+      const active = count > 0;
+
+      // plot
+      rect(cell.x, cell.y, cell.w, cell.h, active ? C.bgDeep : C.black);
+      rect(cell.x, cell.y, cell.w, 1, active ? shade(accent, -1) : C.shadow);
+      rect(cell.x, cell.y + cell.h - 1, cell.w, 1, active ? shade(accent, -1) : C.shadow);
+      rect(cell.x, cell.y, 1, cell.h, active ? shade(accent, -1) : C.shadow);
+      rect(cell.x + cell.w - 1, cell.y, 1, cell.h, active ? shade(accent, -1) : C.shadow);
+
+      // landmark + label
+      sprite(BUILDINGS[cell.district.id], cell.x + 2, cell.y + 1);
+      drawText(ctx, cell.district.name.toUpperCase().slice(0, 12), cell.x + 20, cell.y + 3, css(active ? C.white : C.slate), { scale: 1 });
+      drawText(ctx, `${count}`, cell.x + 20, cell.y + 11, css(active ? shade(accent, 2) : C.slate), { scale: 1 });
+
+      // ground
+      rect(cell.x + 1, cell.groundY, cell.w - 2, 1, C.slate);
+      for (let x = cell.x + 2; x < cell.x + cell.w - 2; x += 4) {
+        rect(x, cell.groundY + 2, 2, 1, C.shadow);
+      }
+
+      // towers: one per founder, newest on top of the stack
+      const perRow = Math.floor((cell.w - 4) / (TOWER_W + TOWER_GAP));
+      const maxRows = Math.floor((cell.groundY - (cell.y + 19)) / 4);
+      const capacity = Math.max(1, perRow * maxRows);
+      const shown = list.slice(-capacity);
+
+      shown.forEach((b, i) => {
+        const col = i % perRow;
+        const row = Math.floor(i / perRow);
+        const x = cell.x + 2 + col * (TOWER_W + TOWER_GAP);
+        const baseY = cell.groundY - row * 4;
+        const jitter = seeded(b.key);
+        const h = 3 + Math.min(TOWER_MAX_H - 3, Math.round(b.valuationCr / 22) + Math.round(jitter * 2));
+        const y = baseY - h;
+
+        rect(x, y, TOWER_W, h, shade(accent, -1));
+        rect(x, y, TOWER_W, 1, shade(accent, 1));
+        // lit window blinking on its own phase so the block shimmers
+        if (Math.sin(t * 1.6 + jitter * 12) > 0.35) {
+          rect(x + 1, y + 2, 1, 1, C.amber);
+        }
+      });
+
+      if (list.length > capacity) {
+        drawText(ctx, `+${list.length - capacity}`, cell.x + cell.w - 3, cell.y + 3, css(C.amber), {
+          scale: 1,
+          align: "right",
+        });
+      }
     }
 
     function draw(now: number) {
-      if (!canvas || !ctx) return;
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
       clockRef.current += dt;
@@ -215,174 +260,75 @@ export default function CityCanvas({ rows, latest, mode, dim, ending }: CityCanv
 
       const target = targetCameraFor(t);
       const cam = cameraRef.current;
-      const ease = ending ? 0.015 : 0.04;
+      const ease = ending ? 0.02 : 0.05;
       cam.x += (target.x - cam.x) * ease;
       cam.y += (target.y - cam.y) * ease;
       cam.zoom += (target.zoom - cam.zoom) * ease;
 
-      const w = canvas.width;
-      const h = canvas.height;
-      ctx.clearRect(0, 0, w, h);
-
       // sky
-      const sky = ctx.createLinearGradient(0, 0, 0, h);
-      sky.addColorStop(0, "#070B18");
-      sky.addColorStop(1, "#0F1B3D");
-      ctx.fillStyle = sky;
-      ctx.fillRect(0, 0, w, h);
-
-      const scale = (h / WORLD_H) * cam.zoom;
-      ctx.save();
-      ctx.translate(w / 2 - cam.x * scale, h / 2 - cam.y * scale);
-      ctx.scale(scale, scale);
-
-      const totalFounders = rows.length;
-
-      // ground plates + district labels
-      for (const cell of CELLS) {
-        const count = grouped[cell.district.id]?.length ?? 0;
-        ctx.fillStyle = count > 0 ? cell.district.accent + "14" : "#ffffff08";
-        ctx.strokeStyle = cell.district.accent + "33";
-        ctx.lineWidth = 2;
-        roundRect(ctx, cell.x, cell.y, cell.w, cell.h, 24);
-        ctx.fill();
-        ctx.stroke();
-
-        ctx.font = "28px sans-serif";
-        ctx.textAlign = "left";
-        ctx.textBaseline = "top";
-        ctx.globalAlpha = 0.85;
-        ctx.fillText(cell.district.icon, cell.x + 14, cell.y + 10);
-        ctx.font = "bold 15px sans-serif";
-        ctx.fillStyle = "#E5E7EB";
-        ctx.fillText(cell.district.name.toUpperCase(), cell.x + 50, cell.y + 18);
-        ctx.font = "12px sans-serif";
-        ctx.fillStyle = "#94A3B8";
-        ctx.fillText(`${count} founder${count === 1 ? "" : "s"}`, cell.x + 50, cell.y + 38);
-        ctx.globalAlpha = 1;
+      rect(0, 0, VW, VH, C.black);
+      rect(0, 0, VW, HUD_TOP + 8, C.bgDeep);
+      for (const s of STARS) {
+        rect(s.x, s.y, 1, 1, s.bright ? C.offWhite : C.slateLight);
       }
 
-      // roads between adjacent districts — brighten & animate as both sides fill up
+      ctx.save();
+      // Whole-pixel camera: sub-pixel translation would shimmer the whole grid.
+      const z = cam.zoom;
+      ctx.translate(
+        Math.round(VW / 2 - cam.x * z),
+        Math.round(VH / 2 - cam.y * z)
+      );
+      ctx.scale(z, z);
+
+      for (const cell of CELLS) {
+        drawDistrict(cell, grouped[cell.district.id] ?? [], t);
+      }
+
+      // roads light up once both districts have founders
       for (let i = 0; i < CELLS.length; i++) {
         for (const j of [i + 1, i + COLS]) {
           if (j >= CELLS.length) continue;
+          if (i % COLS === COLS - 1 && j === i + 1) continue;
           const a = CELLS[i];
           const b = CELLS[j];
-          if (i % COLS === COLS - 1 && j === i + 1) continue; // no wraparound row edge
-          const countA = grouped[a.district.id]?.length ?? 0;
-          const countB = grouped[b.district.id]?.length ?? 0;
-          const connected = Math.min(countA, countB) >= 3;
-          const alpha = connected ? 0.55 : 0.12;
-          ctx.strokeStyle = `rgba(148,163,184,${alpha})`;
-          ctx.lineWidth = connected ? 6 : 3;
-          ctx.setLineDash(connected ? [] : [10, 10]);
-          ctx.beginPath();
-          ctx.moveTo(a.cx, a.cy);
-          ctx.lineTo(b.cx, b.cy);
-          ctx.stroke();
-          ctx.setLineDash([]);
-
-          if (connected) {
-            // traffic dot running along the lit road
-            const speed = 0.08;
-            const p = (t * speed + seeded(`${a.district.id}-${b.district.id}`)) % 1;
-            const tx = a.cx + (b.cx - a.cx) * p;
-            const ty = a.cy + (b.cy - a.cy) * p;
-            ctx.fillStyle = "#FDE047";
-            ctx.beginPath();
-            ctx.arc(tx, ty, 4, 0, Math.PI * 2);
-            ctx.fill();
+          const lit = Math.min(grouped[a.district.id]?.length ?? 0, grouped[b.district.id]?.length ?? 0) >= 3;
+          const colr = lit ? C.slateLight : C.shadow;
+          if (a.y === b.y) {
+            const y = a.groundY + 3;
+            for (let x = a.x + a.w; x < b.x; x += lit ? 2 : 4) rect(x, y, 1, 1, colr);
+            if (lit) {
+              const p = (t * 0.35 + seeded(a.district.id)) % 1;
+              rect(a.x + a.w + (b.x - a.x - a.w) * p, y - 1, 2, 1, C.yellow);
+            }
+          } else {
+            const x = a.cx;
+            for (let y = a.y + a.h; y < b.y; y += lit ? 2 : 4) rect(x, y, 1, 1, colr);
           }
         }
-      }
-
-      // trees — always present, grow with total founders (city literally greening up)
-      const treeScale = Math.min(1, 0.4 + totalFounders / 400);
-      ctx.font = `${Math.round(20 * treeScale)}px sans-serif`;
-      ctx.globalAlpha = 0.75;
-      for (const tr of AMBIENT_TREES) {
-        ctx.fillText("🌳", tr.x, tr.y);
-      }
-      ctx.globalAlpha = 1;
-
-      // buildings
-      for (const cell of CELLS) {
-        const list = grouped[cell.district.id] ?? [];
-        const shown = list.slice(0, OVERFLOW_CAP);
-        for (const b of shown) {
-          drawBuilding(ctx, cell, b, t);
-        }
-        if (list.length > OVERFLOW_CAP) {
-          ctx.font = "bold 14px sans-serif";
-          ctx.fillStyle = "#E5E7EB";
-          ctx.textAlign = "left";
-          ctx.fillText(`+${list.length - OVERFLOW_CAP} more`, cell.x + 14, cell.y + cell.h - 24);
-        }
-      }
-
-      // drones — ambient sky life, a few more once robotics/quantum districts populate
-      const bonusDrones = Math.min(4, Math.floor(((grouped.robotics?.length ?? 0) + (grouped.quantum?.length ?? 0)) / 40));
-      const droneCount = 6 + bonusDrones;
-      ctx.font = "18px sans-serif";
-      for (let i = 0; i < droneCount; i++) {
-        const d = AMBIENT_DRONES[i % AMBIENT_DRONES.length];
-        const x = ((t * d.speed * WORLD_W + i * 400) % (WORLD_W + 200)) - 100;
-        const y = d.laneY + Math.sin(t * 0.6 + i) * 12;
-        ctx.fillText("🛰️", x, y);
       }
 
       ctx.restore();
 
       if (dim) {
-        ctx.fillStyle = "rgba(3,6,16,0.72)";
-        ctx.fillRect(0, 0, w, h);
+        ctx.fillStyle = "rgba(15,15,23,0.82)";
+        ctx.fillRect(0, 0, VW, VH);
       }
 
       raf = requestAnimationFrame(draw);
     }
 
     raf = requestAnimationFrame(draw);
-    return () => {
-      cancelAnimationFrame(raf);
-      window.removeEventListener("resize", resize);
-    };
-    // grouped/latest/mode/topDistrictId are read live from refs+closures each
-    // frame via the effect's own scope, so we intentionally re-subscribe the
-    // rAF loop when any of them changes identity rather than reaching for
-    // extra refs — insert cadence is human-paced, not per-frame.
+    return () => cancelAnimationFrame(raf);
   }, [grouped, latest, mode, dim, ending, rows.length, topDistrictId]);
 
-  return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />;
+  return (
+    <canvas
+      ref={canvasRef}
+      className="pixel-canvas absolute inset-0 w-full h-full"
+      style={{ imageRendering: "pixelated" }}
+    />
+  );
 }
 
-function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
-  ctx.beginPath();
-  ctx.moveTo(x + r, y);
-  ctx.arcTo(x + w, y, x + w, y + h, r);
-  ctx.arcTo(x + w, y + h, x, y + h, r);
-  ctx.arcTo(x, y + h, x, y, r);
-  ctx.arcTo(x, y, x + w, y, r);
-  ctx.closePath();
-}
-
-function drawBuilding(ctx: CanvasRenderingContext2D, cell: Cell, b: Building, t: number) {
-  const pos = buildingPos(cell, Math.min(b.districtIndex, OVERFLOW_CAP - 1));
-  const theme = themeFor(b.sector);
-  const jitter = seeded(b.key);
-  const size = 18 + Math.min(14, b.valuationCr / 25);
-  const pulse = 0.55 + Math.sin(t * 1.4 + jitter * 10) * 0.35;
-
-  // light glow (window lights turning on/off)
-  const glow = ctx.createRadialGradient(pos.x, pos.y, 0, pos.x, pos.y, size * 1.4);
-  glow.addColorStop(0, theme.accent + Math.round(pulse * 255).toString(16).padStart(2, "0"));
-  glow.addColorStop(1, theme.accent + "00");
-  ctx.fillStyle = glow;
-  ctx.beginPath();
-  ctx.arc(pos.x, pos.y, size * 1.4, 0, Math.PI * 2);
-  ctx.fill();
-
-  ctx.font = `${Math.round(size)}px sans-serif`;
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillText(theme.buildingGlyph, pos.x, pos.y);
-}
+export { measureText };

@@ -22,6 +22,7 @@ import MilestoneBanner from "@/components/projector/MilestoneBanner";
 import LeaderboardOverlay from "@/components/projector/LeaderboardOverlay";
 import ClosingSequence from "@/components/projector/ClosingSequence";
 import { useCityFeed, computeCityMetrics, buildingsByDistrict, DISTRICTS } from "@/lib/cityAggregate";
+import { PoweredBy } from "@/components/retro/PoweredBy";
 
 const CYCLE: PresenterMode[] = ["overview", "leaderboard", "stats", "topDistrict", "latest"];
 
@@ -73,17 +74,13 @@ export default function ProjectorPage() {
   }, [onKey]);
 
   return (
-    <div className="fixed inset-0 w-full h-full overflow-hidden bg-[#070B18] select-none">
+    <div className="fixed inset-0 w-full h-full overflow-hidden bg-[var(--p-black)] select-none font-pixel">
       <CityCanvas rows={rows} latest={latest} mode={mode} dim={mode === "leaderboard"} ending={ending} />
 
-      {mode === "stats" && !ending && (
-        <div className="fixed top-8 left-1/2 -translate-x-1/2 z-20">
-          <MetricsBar metrics={metrics} />
-        </div>
-      )}
-      {mode !== "stats" && !ending && (
-        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-20 scale-90 opacity-90">
-          <MetricsBar metrics={metrics} />
+      {/* Metrics ride at the top in every mode; "stats" just enlarges them. */}
+      {!ending && (
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-20">
+          <MetricsBar metrics={metrics} big={mode === "stats"} />
         </div>
       )}
 
@@ -94,13 +91,29 @@ export default function ProjectorPage() {
 
       {ending && <ClosingSequence metrics={metrics} topDistrictName={topDistrict?.name ?? null} />}
 
-      {!enabled && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-20 text-xs font-bold text-amber-300/80 bg-black/40 px-4 py-2 rounded-full">
-          Supabase not configured — projector is offline
+      {/* Branding sits bottom-left, clear of the callout column on the right. */}
+      {!ending && (
+        <div className="fixed bottom-6 left-8 z-20">
+          <PoweredBy height={30} />
         </div>
       )}
 
-      <div className="fixed bottom-4 right-4 z-20 text-[10px] font-mono text-white/25">
+      {!enabled && (
+        <div
+          className="pixel-panel fixed bottom-6 left-1/2 -translate-x-1/2 z-20 px-5 py-3"
+          style={{ background: "var(--p-blood)", borderWidth: 3 }}
+        >
+          <span className="text-[var(--p-sand)]" style={{ fontSize: 11 }}>
+            SUPABASE NOT CONFIGURED / PROJECTOR OFFLINE
+          </span>
+        </div>
+      )}
+
+      {/* Presenter-only status readout, deliberately dim so the room ignores it. */}
+      <div
+        className="fixed bottom-5 right-6 z-20 text-[var(--p-slate)]"
+        style={{ fontSize: 9 }}
+      >
         {cycling ? "AUTO-CYCLE" : mode.toUpperCase()}
       </div>
     </div>

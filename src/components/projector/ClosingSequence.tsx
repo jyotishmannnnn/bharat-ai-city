@@ -1,17 +1,18 @@
 "use client";
 
-// Presenter-triggered ending (key "M"). City keeps breathing underneath
-// (CityCanvas gets `ending` and slow-zooms out on its own) while this
-// overlay reveals the final tally, then fades to branding.
+// Presenter-triggered ending (key "M"). The city keeps breathing underneath
+// (CityCanvas gets `ending` and slow-zooms out on its own) while this overlay
+// reveals the final tally, then settles on branding.
 
 import { motion, AnimatePresence } from "framer-motion";
 import { CityMetrics } from "@/lib/cityAggregate";
+import { PoweredBy } from "@/components/retro/PoweredBy";
 
-const ROWS: { key: keyof CityMetrics; label: string; format: (v: number) => string }[] = [
-  { key: "founders", label: "AI Startups", format: (v) => v.toLocaleString("en-IN") },
-  { key: "population", label: "Population Reached", format: (v) => v.toLocaleString("en-IN") },
-  { key: "jobs", label: "Jobs Created", format: (v) => v.toLocaleString("en-IN") },
-  { key: "gdpCr", label: "GDP Added", format: (v) => `₹${v.toLocaleString("en-IN")} Cr` },
+const ROWS: { key: keyof CityMetrics; label: string; color: string }[] = [
+  { key: "founders", label: "AI STARTUPS", color: "var(--p-yellow)" },
+  { key: "population", label: "CITIZENS REACHED", color: "var(--p-lime)" },
+  { key: "jobs", label: "JOBS CREATED", color: "var(--p-cyan)" },
+  { key: "gdpCr", label: "GDP ADDED (CR)", color: "var(--p-amber)" },
 ];
 
 export default function ClosingSequence({
@@ -26,34 +27,41 @@ export default function ClosingSequence({
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ duration: 1.2 }}
-        className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-950/70 backdrop-blur-sm"
+        transition={{ duration: 1 }}
+        className="fixed inset-0 z-50 flex flex-col items-center justify-center font-pixel"
+        style={{ background: "rgba(15,15,23,0.92)" }}
       >
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
           className="text-center mb-10"
         >
-          <div className="text-sm uppercase tracking-[0.4em] text-cyan-300 font-bold">
-            Bharat AI City
+          <div className="text-[var(--p-cyan)]" style={{ fontSize: 13 }}>
+            BHARAT AI CITY
           </div>
-          <div className="text-5xl font-black text-white mt-1">Built Today</div>
+          <div
+            className="text-[var(--p-yellow)]"
+            style={{ fontSize: 44, marginTop: 18, textShadow: "6px 6px 0 var(--p-blood)" }}
+          >
+            BUILT TODAY
+          </div>
         </motion.div>
 
-        <div className="grid grid-cols-2 gap-6 mb-10">
+        <div className="grid grid-cols-2 gap-5 mb-9">
           {ROWS.map((row, i) => (
             <motion.div
               key={row.key}
-              initial={{ opacity: 0, scale: 0.85 }}
+              initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.8 + i * 0.25, type: "spring", damping: 14 }}
-              className="rounded-2xl px-8 py-5 bg-white/5 border border-white/10 text-center min-w-[220px]"
+              transition={{ delay: 0.8 + i * 0.25, type: "spring", damping: 15 }}
+              className="pixel-panel text-center px-9 py-6"
+              style={{ background: "var(--p-deep)", borderWidth: 4, minWidth: 280 }}
             >
-              <div className="text-3xl font-black text-white tabular-nums">
-                {row.format(metrics[row.key])}
+              <div className="tabular-nums" style={{ fontSize: 32, color: row.color }}>
+                {metrics[row.key].toLocaleString("en-IN")}
               </div>
-              <div className="text-xs uppercase tracking-widest text-white/50 font-bold mt-1">
+              <div className="text-[var(--p-silver)]" style={{ fontSize: 11, marginTop: 14 }}>
                 {row.label}
               </div>
             </motion.div>
@@ -65,9 +73,11 @@ export default function ClosingSequence({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 2 }}
-            className="text-white/70 font-semibold mb-10"
+            className="text-[var(--p-silver)] mb-9"
+            style={{ fontSize: 14 }}
           >
-            Top Sector: <span className="text-amber-300 font-black">{topDistrictName}</span>
+            TOP SECTOR:{" "}
+            <span className="text-[var(--p-amber)]">{topDistrictName.toUpperCase()}</span>
           </motion.div>
         )}
 
@@ -75,17 +85,19 @@ export default function ClosingSequence({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 2.6 }}
-          className="text-2xl font-bold text-white/90"
+          className="text-[var(--p-white)]"
+          style={{ fontSize: 22 }}
         >
-          Thank you, Founders. 🙏
+          THANK YOU, FOUNDERS
         </motion.div>
+
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 3.4 }}
-          className="text-sm text-white/40 font-bold uppercase tracking-[0.3em] mt-3"
+          className="mt-8"
         >
-          Bharat1.ai
+          <PoweredBy height={34} />
         </motion.div>
       </motion.div>
     </AnimatePresence>

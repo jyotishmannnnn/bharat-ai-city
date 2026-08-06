@@ -7,6 +7,8 @@ import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { LeaderboardEntry } from "@/game/types";
 import { getSectorTheme } from "@/lib/store";
+import { PixelSprite } from "@/components/retro/PixelSprite";
+import { BUILDINGS } from "@/game/retro/items";
 
 interface QueuedCallout {
   id: string;
@@ -69,35 +71,41 @@ export default function FounderCallout({ latest }: { latest: LeaderboardEntry | 
 
   const sector = visible?.entry.sectors[0];
   const theme = sector ? getSectorTheme(sector) : null;
+  const accent = theme?.accent ?? "#3fc9d4";
 
   return (
-    <div className="pointer-events-none fixed top-24 right-6 z-30">
+    <div className="pointer-events-none fixed top-28 right-8 z-30 font-pixel">
       <AnimatePresence>
-        {visible && theme && (
+        {visible && theme && sector && (
           <motion.div
             key={visible.id}
-            initial={{ opacity: 0, x: 60, scale: 0.9 }}
-            animate={{ opacity: 1, x: 0, scale: 1 }}
-            exit={{ opacity: 0, x: 40, scale: 0.95 }}
-            transition={{ type: "spring", damping: 16 }}
-            className="w-80 rounded-2xl p-4 shadow-2xl border border-white/15 backdrop-blur-md"
-            style={{ background: `linear-gradient(135deg, ${theme.gradient[0]}dd, ${theme.gradient[1]}dd)` }}
+            initial={{ opacity: 0, x: 50 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: 30 }}
+            transition={{ type: "spring", damping: 18 }}
+            className="pixel-panel px-5 py-4"
+            style={{ background: "var(--p-deep)", borderWidth: 4, width: 400 }}
           >
-            <div className="flex items-center gap-3">
-              <div className="text-4xl leading-none">{theme.buildingGlyph}</div>
+            <div className="flex items-center gap-4">
+              <PixelSprite sprite={BUILDINGS[sector]} size={3} />
               <div className="min-w-0">
-                <div className="text-[10px] uppercase tracking-widest font-bold text-white/70">
-                  {theme.buildingName} District
+                <div style={{ fontSize: 10, color: accent }}>
+                  {theme.buildingName.toUpperCase()} DISTRICT
                 </div>
-                <div className="text-lg font-black text-white truncate">
-                  {visible.entry.playerName}
+                <div
+                  className="text-[var(--p-white)] truncate"
+                  style={{ fontSize: 20, marginTop: 8 }}
+                >
+                  {visible.entry.playerName.toUpperCase()}
                 </div>
               </div>
             </div>
-            <div className="mt-2 flex items-center justify-between text-white/90">
-              <span className="text-xs font-semibold opacity-80">just built</span>
-              <span className="text-sm font-bold">
-                +{visible.entry.citizensImpacted.toLocaleString("en-IN")} citizens
+            <div className="flex items-center justify-between" style={{ marginTop: 14 }}>
+              <span className="text-[var(--p-silver)]" style={{ fontSize: 10 }}>
+                JUST BUILT
+              </span>
+              <span className="text-[var(--p-lime)] tabular-nums" style={{ fontSize: 14 }}>
+                +{visible.entry.citizensImpacted.toLocaleString("en-IN")}
               </span>
             </div>
           </motion.div>

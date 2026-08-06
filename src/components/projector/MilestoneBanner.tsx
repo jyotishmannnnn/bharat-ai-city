@@ -19,7 +19,8 @@ interface Particle {
   spin: number;
 }
 
-const CONFETTI_COLORS = ["#2DD4BF", "#FDE047", "#F472B6", "#A78BFA", "#60A5FA", "#4ADE80"];
+// Straight from the 32-colour game palette, so the celebration matches the city.
+const CONFETTI_COLORS = ["#3fc9d4", "#f7e04c", "#f4526a", "#b06fe0", "#5fa8f5", "#63d16b"];
 
 function ConfettiBurst({ onDone }: { onDone: () => void }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -38,9 +39,11 @@ function ConfettiBurst({ onDone }: { onDone: () => void }) {
       vx: (Math.random() - 0.5) * 12,
       vy: -Math.random() * 10 - 4,
       color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
-      size: 5 + Math.random() * 6,
-      rotation: Math.random() * Math.PI,
-      spin: (Math.random() - 0.5) * 0.3,
+      // Whole multiples of the projector's 4px pixel grid, so confetti reads as
+      // chunky sprites rather than smooth rectangles.
+      size: 8 + Math.floor(Math.random() * 3) * 4,
+      rotation: 0,
+      spin: 0,
     }));
 
     let raf = 0;
@@ -52,13 +55,15 @@ function ConfettiBurst({ onDone }: { onDone: () => void }) {
         p.vy += 0.35;
         p.x += p.vx;
         p.y += p.vy;
-        p.rotation += p.spin;
-        ctx.save();
-        ctx.translate(p.x, p.y);
-        ctx.rotate(p.rotation);
+        // Snap to the pixel grid: unrotated whole-pixel squares, no sub-pixel
+        // positions, so nothing anti-aliases against the retro city behind it.
         ctx.fillStyle = p.color;
-        ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.6);
-        ctx.restore();
+        ctx.fillRect(
+          Math.round(p.x / 4) * 4,
+          Math.round(p.y / 4) * 4,
+          p.size,
+          p.size
+        );
       }
       frame++;
       if (frame < 150) raf = requestAnimationFrame(tick);
@@ -117,17 +122,20 @@ export default function MilestoneBanner({ founders }: { founders: number }) {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -30, scale: 0.95 }}
             transition={{ type: "spring", damping: 14 }}
-            className="fixed top-10 left-1/2 -translate-x-1/2 z-50 text-center"
+            className="fixed top-10 left-1/2 -translate-x-1/2 z-50 text-center font-pixel"
           >
-            <div className="rounded-3xl px-10 py-6 bg-gradient-to-r from-cyan-400 via-fuchsia-500 to-amber-400 shadow-2xl">
-              <div className="text-sm font-bold uppercase tracking-[0.3em] text-slate-950/70">
-                Milestone Reached
+            <div
+              className="pixel-panel px-12 py-7"
+              style={{ background: "var(--p-yellow)", borderWidth: 5 }}
+            >
+              <div className="text-[var(--p-blood)]" style={{ fontSize: 13 }}>
+                MILESTONE REACHED
               </div>
-              <div className="text-5xl font-black text-slate-950 mt-1">
-                {active.toLocaleString("en-IN")} FOUNDERS 🎉
+              <div className="text-[var(--p-black)]" style={{ fontSize: 46, marginTop: 16 }}>
+                {active.toLocaleString("en-IN")} FOUNDERS
               </div>
-              <div className="text-slate-950/80 font-semibold mt-1">
-                Bharat AI City just grew, together.
+              <div className="text-[var(--p-blood)]" style={{ fontSize: 12, marginTop: 16 }}>
+                BHARAT AI CITY JUST GREW, TOGETHER
               </div>
             </div>
           </motion.div>

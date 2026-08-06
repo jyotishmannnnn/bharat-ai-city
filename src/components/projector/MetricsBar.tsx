@@ -1,9 +1,10 @@
 "use client";
 
-// Live city-wide metrics strip for the projector. Every number here is
-// derived from the same runs data the phones already write — no new
-// tables. Numbers never snap: each tick eases toward the latest value so
-// the room watches the count climb instead of jumping.
+// Live city-wide metrics strip. Every number derives from the same runs rows
+// the phones already write — no extra tables.
+//
+// Numbers never snap: each tick eases toward the latest value so the room
+// watches the count climb. Sized for readability from the back of a hall.
 
 import { useEffect, useRef, useState } from "react";
 import { CityMetrics } from "@/lib/cityAggregate";
@@ -11,66 +12,77 @@ import { CityMetrics } from "@/lib/cityAggregate";
 interface MetricDef {
   key: keyof CityMetrics;
   label: string;
-  icon: string;
+  color: string;
   format: (v: number) => string;
 }
 
 const METRICS: MetricDef[] = [
-  { key: "founders", label: "AI Startups", icon: "🚀", format: (v) => Math.round(v).toLocaleString("en-IN") },
-  { key: "population", label: "Population", icon: "👥", format: (v) => Math.round(v).toLocaleString("en-IN") },
-  { key: "jobs", label: "Jobs Created", icon: "💼", format: (v) => Math.round(v).toLocaleString("en-IN") },
-  { key: "gdpCr", label: "GDP", icon: "💰", format: (v) => `₹${Math.round(v).toLocaleString("en-IN")} Cr` },
-  { key: "innovationIndex", label: "Innovation Index", icon: "💡", format: (v) => Math.round(v).toString() },
+  { key: "founders", label: "STARTUPS", color: "var(--p-yellow)", format: (v) => Math.round(v).toLocaleString("en-IN") },
+  { key: "population", label: "CITIZENS", color: "var(--p-lime)", format: (v) => Math.round(v).toLocaleString("en-IN") },
+  { key: "jobs", label: "JOBS", color: "var(--p-cyan)", format: (v) => Math.round(v).toLocaleString("en-IN") },
+  { key: "gdpCr", label: "GDP CR", color: "var(--p-amber)", format: (v) => Math.round(v).toLocaleString("en-IN") },
+  { key: "innovationIndex", label: "INNOV IDX", color: "var(--p-violet)", format: (v) => Math.round(v).toString() },
 ];
 
-function useCountUp(target: number, durationMs = 900) {
+function useEased(target: number, durationMs = 900) {
   const [value, setValue] = useState(target);
   const fromRef = useRef(target);
-  const startRef = useRef<number | null>(null);
 
   useEffect(() => {
-    fromRef.current = value;
-    startRef.current = null;
-    let raf = 0;
     const from = fromRef.current;
     const delta = target - from;
-    function tick(now: number) {
-      if (startRef.current === null) startRef.current = now;
-      const p = Math.min(1, (now - startRef.current) / durationMs);
+    let raf = 0;
+    let start: number | null = null;
+    const tick = (now: number) => {
+      if (start === null) start = now;
+      const p = Math.min(1, (now - start) / durationMs);
       const eased = 1 - Math.pow(1 - p, 3);
-      setValue(from + delta * eased);
+      const v = from + delta * eased;
+      setValue(v);
+      fromRef.current = v;
       if (p < 1) raf = requestAnimationFrame(tick);
-    }
+    };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [target]);
+  }, [target, durationMs]);
 
   return value;
 }
 
-function MetricTile({ def, value }: { def: MetricDef; value: number }) {
-  const animated = useCountUp(value);
+function MetricTile({ def, value, big }: { def: MetricDef; value: number; big: boolean }) {
+  const animated = useEased(value);
   return (
-    <div className="flex items-center gap-3 px-5 py-3 rounded-2xl bg-white/5 border border-white/10 backdrop-blur">
-      <span className="text-2xl">{def.icon}</span>
-      <div>
-        <div className="text-2xl font-black tabular-nums text-white leading-none">
-          {def.format(animated)}
-        </div>
-        <div className="text-[11px] uppercase tracking-widest text-white/50 font-bold mt-0.5">
-          {def.label}
-        </div>
+    <div
+      className="pixel-panel bg-[var(--p-deep)] text-center"
+      style={{ padding: big ? "18px 26px" : "10px 16px" }}
+    >
+      <div
+        className="font-pixel tabular-nums leading-none"
+        style={{ color: def.color, fontSize: big ? 40 : 24 }}
+      >
+        {def.format(animated)}
+      </div>
+      <div
+        className="font-pixel text-[var(--p-silver)] leading-none"
+        style={{ marginTop: big ? 14 : 9, fontSize: big ? 13 : 9 }}
+      >
+        {def.label}
       </div>
     </div>
   );
 }
 
-export default function MetricsBar({ metrics }: { metrics: CityMetrics }) {
+export default function MetricsBar({
+  metrics,
+  big = false,
+}: {
+  metrics: CityMetrics;
+  big?: boolean;
+}) {
   return (
-    <div className="flex flex-wrap gap-3 justify-center">
+    <div className="flex flex-wrap justify-center" style={{ gap: big ? 16 : 10 }}>
       {METRICS.map((def) => (
-        <MetricTile key={def.key} def={def} value={metrics[def.key]} />
+        <MetricTile key={def.key} def={def} value={metrics[def.key]} big={big} />
       ))}
     </div>
   );
