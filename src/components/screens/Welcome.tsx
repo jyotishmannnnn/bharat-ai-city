@@ -1,10 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import { motion } from "framer-motion";
 import { useGameStore } from "@/lib/store";
+import { PixelSprite } from "@/components/retro/PixelSprite";
+import { BUILDINGS } from "@/game/retro/items";
+import { chiptune, haptics } from "@/lib/chiptune";
 
-const FLOATERS = ["🏥", "🤖", "🚀", "⚛️", "🌾", "🎬", "🏟️", "🛰️"];
+// Decorative skyline strip. CSS-animated (not Framer) so it stays off the JS
+// main thread on low-end phones -- a real share of a 1200-person room.
+const SKYLINE: (keyof typeof BUILDINGS)[] = [
+  "healthcare",
+  "semiconductors",
+  "robotics",
+  "climate",
+  "education",
+];
 
 export default function Welcome() {
   const [name, setName] = useState("");
@@ -12,82 +22,91 @@ export default function Welcome() {
   const goTo = useGameStore((s) => s.goTo);
 
   const start = () => {
+    chiptune.init();
+    chiptune.uiTap();
+    haptics.medium();
     setPlayerName(name.trim() || `Founder${Math.floor(Math.random() * 9000 + 1000)}`);
     goTo("select");
   };
 
   return (
-    <div className="relative w-full h-full overflow-hidden bg-gradient-to-br from-[#0B1120] via-[#111C3D] to-[#1B0B3D] flex flex-col items-center justify-center px-6 text-white">
-      {FLOATERS.map((f, i) => (
-        <motion.span
-          key={i}
-          className="absolute text-3xl opacity-20"
-          style={{ left: `${(i * 47) % 100}%`, top: `${(i * 31) % 100}%` }}
-          animate={{ y: [0, -20, 0], rotate: [0, 8, -8, 0] }}
-          transition={{ duration: 5 + i, repeat: Infinity, ease: "easeInOut" }}
-        >
-          {f}
-        </motion.span>
-      ))}
+    <div className="pixel-screen crt relative w-full h-full overflow-y-auto flex flex-col items-center justify-center px-5 py-8">
+      {/* starfield */}
+      <div
+        aria-hidden
+        className="absolute inset-0 opacity-40"
+        style={{
+          backgroundImage:
+            "radial-gradient(1px 1px at 12% 18%, #d4d4e4 50%, transparent 50%)," +
+            "radial-gradient(1px 1px at 68% 12%, #9a9ab5 50%, transparent 50%)," +
+            "radial-gradient(1px 1px at 34% 42%, #d4d4e4 50%, transparent 50%)," +
+            "radial-gradient(1px 1px at 84% 34%, #6b6b8c 50%, transparent 50%)," +
+            "radial-gradient(1px 1px at 52% 8%, #d4d4e4 50%, transparent 50%)",
+        }}
+      />
 
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.6 }}
-        className="text-center z-10"
-      >
-        <div className="text-sm font-bold tracking-[0.3em] text-cyan-300 mb-3">
+      <div className="relative z-10 text-center">
+        <div className="text-[7px] leading-relaxed text-[var(--p-cyan)] mb-3">
           BHARAT AI SUMMIT PRESENTS
         </div>
-        <h1 className="text-4xl sm:text-5xl font-black leading-tight bg-gradient-to-r from-cyan-300 via-fuchsia-300 to-amber-300 bg-clip-text text-transparent">
-          BUILD BHARAT
+        <h1
+          className="text-[19px] leading-[1.6] text-[var(--p-yellow)]"
+          style={{ textShadow: "3px 3px 0 var(--p-blood)" }}
+        >
+          BUILD
+          <br />
+          BHARAT
           <br />
           AI CITY
         </h1>
-      </motion.div>
+      </div>
 
-      <motion.div
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ delay: 0.3, type: "spring" }}
-        className="mt-8 z-10 bg-white/10 backdrop-blur-lg border border-white/20 rounded-3xl px-6 py-5 text-center shadow-2xl"
-      >
-        <div className="text-xs uppercase tracking-widest text-amber-300 font-bold">
-          You just received
+      {/* grant panel */}
+      <div className="pixel-panel relative z-10 mt-6 bg-[var(--p-deep)] px-5 py-4 text-center">
+        <div className="text-[7px] text-[var(--p-amber)] leading-relaxed">
+          YOU RECEIVED
         </div>
-        <div className="text-3xl font-black mt-1">₹100 Crore</div>
-        <div className="text-sm text-white/70">Innovation Grant</div>
-      </motion.div>
+        <div className="text-[17px] text-[var(--p-white)] mt-2 leading-relaxed">
+          100 CR
+        </div>
+        <div className="text-[7px] text-[var(--p-silver)] mt-2 leading-relaxed">
+          INNOVATION GRANT
+        </div>
+      </div>
 
-      <motion.p
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.6 }}
-        className="mt-6 z-10 text-center text-white/80 max-w-xs"
-      >
-        Build <span className="font-bold text-white">three AI startups</span> and transform
-        Bharat into a Human-Centric AI City.
-      </motion.p>
+      <p className="relative z-10 mt-5 text-center text-[8px] leading-[1.9] text-[var(--p-off)] max-w-[280px]">
+        BUILD <span className="text-[var(--p-lime)]">3 AI STARTUPS</span> AND
+        TRANSFORM BHARAT
+      </p>
 
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.9 }}
-        className="mt-8 z-10 w-full max-w-xs"
-      >
+      {/* skyline strip */}
+      <div className="relative z-10 flex items-end gap-1 mt-5" aria-hidden>
+        {SKYLINE.map((s, i) => (
+          <div
+            key={s}
+            className="pixel-bob"
+            style={{ animationDelay: `${i * 0.18}s` }}
+          >
+            <PixelSprite sprite={BUILDINGS[s]} size={2} />
+          </div>
+        ))}
+      </div>
+
+      <div className="relative z-10 mt-6 w-full max-w-[300px]">
         <input
           value={name}
-          onChange={(e) => setName(e.target.value.slice(0, 16))}
-          placeholder="Enter founder name"
-          className="w-full rounded-2xl bg-white/10 border border-white/30 px-4 py-3 text-center text-white placeholder-white/40 outline-none focus:border-cyan-300"
+          onChange={(e) => setName(e.target.value.slice(0, 12))}
+          placeholder="FOUNDER NAME"
+          maxLength={12}
+          className="pixel-input font-pixel w-full px-3 py-3 text-center text-[9px] leading-relaxed"
         />
         <button
           onClick={start}
-          className="mt-4 w-full rounded-2xl bg-gradient-to-r from-cyan-400 to-fuchsia-500 py-4 font-black text-lg text-slate-950 shadow-lg shadow-fuchsia-500/30 active:scale-95 transition"
+          className="pixel-btn font-pixel mt-4 w-full bg-[var(--p-lime)] py-4 text-[10px] leading-relaxed text-[var(--p-black)]"
         >
-          START MY MISSION 🚀
+          START MISSION
         </button>
-      </motion.div>
+      </div>
     </div>
   );
 }

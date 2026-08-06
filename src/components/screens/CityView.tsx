@@ -1,92 +1,113 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { useEffect, useState } from "react";
 import { useGameStore, getSectorTheme } from "@/lib/store";
-
-const AMBIENT = ["🚗", "🚁", "🚕", "🛵"];
+import { BuildingSprite } from "@/components/retro/PixelSprite";
+import { chiptune, haptics } from "@/lib/chiptune";
 
 export default function CityView() {
   const chosenSectors = useGameStore((s) => s.chosenSectors);
   const generatedStartups = useGameStore((s) => s.generatedStartups);
   const finalizeFounderProfile = useGameStore((s) => s.finalizeFounderProfile);
 
+  // Buildings light up in sequence rather than all popping on independent
+  // timers, and the CTA waits for the sequence instead of a fixed delay.
+  const [revealed, setRevealed] = useState(0);
+  const total = chosenSectors.length;
+
+  useEffect(() => {
+    if (revealed >= total) return;
+    const t = setTimeout(() => {
+      setRevealed((n) => n + 1);
+      chiptune.collect(revealed * 3);
+      haptics.light();
+    }, 420);
+    return () => clearTimeout(t);
+  }, [revealed, total]);
+
+  const done = revealed >= total;
+
   return (
-    <div className="relative w-full h-full overflow-hidden bg-gradient-to-b from-[#0B1120] via-[#0F1B3D] to-[#142451] text-white flex flex-col items-center px-6 pt-10 pb-8">
-      <motion.h2
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="text-2xl font-black text-center"
-      >
-        Bharat AI City is Rising 🌆
-      </motion.h2>
-      <p className="text-white/60 text-sm mb-6 text-center">
-        Every startup you built just changed the skyline.
+    <div className="pixel-screen crt relative w-full h-full overflow-hidden flex flex-col items-center px-4 pt-8 pb-6">
+      {/* stars */}
+      <div
+        aria-hidden
+        className="absolute inset-0 opacity-40"
+        style={{
+          backgroundImage:
+            "radial-gradient(1px 1px at 18% 14%, #d4d4e4 50%, transparent 50%)," +
+            "radial-gradient(1px 1px at 72% 9%, #9a9ab5 50%, transparent 50%)," +
+            "radial-gradient(1px 1px at 44% 24%, #d4d4e4 50%, transparent 50%)," +
+            "radial-gradient(1px 1px at 88% 20%, #6b6b8c 50%, transparent 50%)",
+        }}
+      />
+
+      <h2 className="relative z-10 text-[12px] leading-[1.6] text-[var(--p-yellow)] text-center">
+        CITY IS RISING
+      </h2>
+      <p className="relative z-10 text-[7px] leading-[1.9] text-[var(--p-silver)] mt-2 text-center">
+        YOUR STARTUPS CHANGED THE SKYLINE
       </p>
 
-      {/* skyline */}
-      <div className="relative w-full flex-1 flex items-end justify-center gap-4 pb-6">
-        {/* ambient sky traffic */}
-        {AMBIENT.map((g, i) => (
-          <motion.span
-            key={i}
-            className="absolute text-2xl"
-            style={{ top: `${10 + i * 12}%` }}
-            initial={{ x: "-10vw" }}
-            animate={{ x: "110vw" }}
-            transition={{ duration: 8 + i * 2, repeat: Infinity, ease: "linear", delay: i * 1.5 }}
-          >
-            {g}
-          </motion.span>
-        ))}
-
+      <div className="relative z-10 flex-1 w-full flex items-end justify-center gap-3 pb-4">
         {chosenSectors.map((sectorId, i) => {
           const theme = getSectorTheme(sectorId);
           const startup = generatedStartups[i];
+          const shown = i < revealed;
           return (
-            <motion.div
+            <div
               key={sectorId}
-              initial={{ opacity: 0, y: 120, scale: 0.6 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              transition={{ delay: 0.3 + i * 0.4, type: "spring", damping: 12 }}
-              className="flex flex-col items-center"
+              className="flex flex-col items-center transition-opacity duration-200"
+              style={{ opacity: shown ? 1 : 0 }}
             >
-              <motion.div
-                animate={{ y: [0, -4, 0] }}
-                transition={{ duration: 2.4, repeat: Infinity, delay: i * 0.3 }}
-                className="text-6xl drop-shadow-lg"
-              >
-                {theme.buildingGlyph}
-              </motion.div>
-              <div
-                className="mt-2 text-[11px] font-bold px-2 py-1 rounded-full text-center max-w-[90px] truncate"
-                style={{ background: theme.accent + "30" }}
-              >
-                {startup?.name ?? theme.buildingName}
+              <div className={shown ? "pixel-bob" : ""} style={{ animationDelay: `${i * 0.2}s` }}>
+                <BuildingSprite sector={sectorId} size={3} />
               </div>
-              {/* light glow base */}
-              <motion.div
-                animate={{ opacity: [0.5, 1, 0.5] }}
-                transition={{ duration: 1.6, repeat: Infinity }}
-                className="w-16 h-1.5 rounded-full mt-1"
-                style={{ background: theme.accent, filter: "blur(2px)" }}
+              <div className="mt-2 px-1.5 py-1 bg-[var(--p-shadow)] max-w-[86px]">
+                <div className="text-[6px] leading-[1.7] text-[var(--p-off)] text-center break-words">
+                  {(startup?.name ?? theme.buildingName).toUpperCase()}
+                </div>
+              </div>
+              {/* lit base -- blinks in steps, no blur */}
+              <div
+                className="w-12 h-1.5 mt-1.5 pixel-blink"
+                style={{
+                  background: "var(--p-amber)",
+                  animationDelay: `${i * 0.25}s`,
+                }}
               />
-            </motion.div>
+            </div>
           );
         })}
       </div>
 
       {/* road */}
-      <div className="w-full h-2 bg-white/10 rounded-full mb-8" />
+      <div
+        aria-hidden
+        className="relative z-10 w-full h-3 mb-5"
+        style={{
+          background:
+            "repeating-linear-gradient(90deg, var(--p-slate) 0 6px, transparent 6px 12px)",
+          borderTop: "2px solid var(--p-shadow)",
+        }}
+      />
 
-      <motion.button
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 1.6 }}
-        onClick={finalizeFounderProfile}
-        className="w-full max-w-sm rounded-2xl bg-gradient-to-r from-cyan-400 to-fuchsia-500 text-slate-950 py-4 font-black text-lg shadow-xl active:scale-95 transition"
+      <button
+        onClick={() => {
+          chiptune.init();
+          chiptune.uiTap();
+          haptics.medium();
+          finalizeFounderProfile();
+        }}
+        disabled={!done}
+        className="pixel-btn font-pixel relative z-10 w-full max-w-[340px] py-4 text-[10px] leading-relaxed"
+        style={{
+          background: done ? "var(--p-cyan)" : "var(--p-shadow)",
+          color: done ? "var(--p-black)" : "var(--p-slate-l)",
+        }}
       >
-        SEE MY FOUNDER CARD 🏆
-      </motion.button>
+        {done ? "SEE FOUNDER CARD" : "BUILDING..."}
+      </button>
     </div>
   );
 }

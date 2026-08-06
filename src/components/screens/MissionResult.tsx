@@ -1,7 +1,9 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { useGameStore, getSectorTheme } from "@/lib/store";
+import { BuildingSprite } from "@/components/retro/PixelSprite";
+import { useCountUp } from "@/lib/useCountUp";
+import { chiptune, haptics } from "@/lib/chiptune";
 
 export default function MissionResult() {
   const missionResults = useGameStore((s) => s.missionResults);
@@ -12,88 +14,99 @@ export default function MissionResult() {
 
   const result = missionResults[missionResults.length - 1];
   const startup = generatedStartups[generatedStartups.length - 1];
+
+  // Hooks must run unconditionally, so compute against safe defaults and bail
+  // out on render instead of before the hook calls.
+  const valuation = useCountUp(startup?.estimatedValuationCr ?? 0, 900, 250);
+  const citizens = useCountUp(startup?.citizensImpacted ?? 0, 1100, 400);
+
   if (!result || !startup) return null;
   const theme = getSectorTheme(result.sector);
   const isLast = currentMissionIndex + 1 >= chosenSectors.length;
 
+  const next = () => {
+    chiptune.init();
+    chiptune.uiTap();
+    haptics.medium();
+    advanceAfterResult();
+  };
+
   return (
-    <div
-      className="w-full h-full flex flex-col items-center justify-center px-6 text-white overflow-y-auto py-8"
-      style={{ background: `linear-gradient(160deg, ${theme.gradient[0]}, ${theme.gradient[1]})` }}
-    >
-      <motion.div
-        initial={{ scale: 0, rotate: -8 }}
-        animate={{ scale: 1, rotate: 0 }}
-        transition={{ type: "spring", damping: 10 }}
-        className="text-6xl mb-2"
-      >
-        🎉
-      </motion.div>
-      <div className="text-sm font-bold uppercase tracking-widest text-white/70 mb-1">
-        Startup Launched!
+    <div className="pixel-screen crt w-full h-full overflow-y-auto flex flex-col items-center px-4 py-6">
+      <div className="text-[9px] leading-relaxed text-[var(--p-lime)] pixel-blink">
+        STARTUP LAUNCHED
       </div>
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.15 }}
-        className="w-full max-w-sm bg-white text-slate-900 rounded-3xl p-5 shadow-2xl"
-      >
-        <div className="flex items-center gap-3 mb-2">
-          <div className="text-4xl">{startup.logoGlyph}</div>
-          <div>
-            <div className="font-black text-xl leading-tight">{startup.name}</div>
-            <div className="text-xs text-slate-500">{startup.tagline}</div>
-          </div>
+
+      <div className="mt-4 pixel-bob">
+        <BuildingSprite sector={result.sector} size={3} />
+      </div>
+
+      <div className="pixel-panel w-full max-w-[340px] bg-[var(--p-deep)] p-4 mt-4">
+        <div className="text-[12px] leading-[1.6] text-[var(--p-yellow)]">
+          {startup.name.toUpperCase()}
         </div>
-        <div className="text-sm text-slate-700 my-2">
-          <span className="font-bold">USP:</span> {startup.usp}
+        <div className="text-[7px] leading-[1.9] text-[var(--p-silver)] mt-2">
+          {startup.tagline.toUpperCase()}
         </div>
-        <div className="flex flex-wrap gap-1.5 mb-3">
+
+        <div className="text-[7px] leading-[1.9] text-[var(--p-off)] mt-3">
+          <span className="text-[var(--p-cyan)]">USP: </span>
+          {startup.usp.toUpperCase()}
+        </div>
+
+        <div className="flex flex-wrap gap-1.5 mt-3">
           {startup.aiStack.map((t) => (
             <span
               key={t}
-              className="text-[11px] font-semibold px-2 py-0.5 rounded-full"
-              style={{ background: theme.accent + "30", color: theme.gradient[1] }}
+              className="text-[6px] leading-relaxed px-1.5 py-1 bg-[var(--p-slate)] text-[var(--p-ice)]"
             >
-              {t}
+              {t.toUpperCase()}
             </span>
           ))}
         </div>
-        <div className="grid grid-cols-2 gap-2 text-center">
-          <div className="bg-slate-100 rounded-xl py-2">
-            <div className="text-lg font-black">₹{startup.estimatedValuationCr} Cr</div>
-            <div className="text-[10px] text-slate-500 uppercase font-bold">Valuation</div>
+
+        <div className="grid grid-cols-2 gap-2 mt-4">
+          <div className="pixel-panel bg-[var(--p-shadow)] py-2.5 text-center">
+            <div className="text-[11px] leading-relaxed text-[var(--p-yellow)] tabular-nums">
+              {valuation} CR
+            </div>
+            <div className="text-[6px] leading-relaxed text-[var(--p-silver)] mt-1.5">
+              VALUATION
+            </div>
           </div>
-          <div className="bg-slate-100 rounded-xl py-2">
-            <div className="text-lg font-black">{startup.citizensImpacted.toLocaleString("en-IN")}</div>
-            <div className="text-[10px] text-slate-500 uppercase font-bold">Citizens Impacted</div>
+          <div className="pixel-panel bg-[var(--p-shadow)] py-2.5 text-center">
+            <div className="text-[11px] leading-relaxed text-[var(--p-lime)] tabular-nums">
+              {citizens.toLocaleString("en-IN")}
+            </div>
+            <div className="text-[6px] leading-relaxed text-[var(--p-silver)] mt-1.5">
+              CITIZENS
+            </div>
           </div>
         </div>
-        <div className="mt-2 text-[11px] text-slate-400 text-center">
-          Founder Archetype: <span className="font-bold text-slate-600">{startup.founderArchetype}</span>
+
+        <div className="text-[6px] leading-[1.9] text-[var(--p-slate-l)] text-center mt-3">
+          ARCHETYPE:{" "}
+          <span className="text-[var(--p-violet)]">
+            {startup.founderArchetype.toUpperCase()}
+          </span>
         </div>
-      </motion.div>
+      </div>
 
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.4 }}
-        className="flex gap-4 mt-4 text-xs text-white/80"
-      >
-        <span>✅ {result.collected} collected</span>
-        <span>💥 {result.hits} hits taken</span>
-        <span>🔥 score {result.score}</span>
-      </motion.div>
+      <div className="flex gap-4 mt-4 text-[7px] leading-relaxed">
+        <span className="text-[var(--p-lime)]">GOT {result.collected}</span>
+        <span className="text-[var(--p-coral)]">HIT {result.hits}</span>
+        <span className="text-[var(--p-yellow)]">PTS {result.score}</span>
+      </div>
 
-      <motion.button
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.55 }}
-        onClick={advanceAfterResult}
-        className="mt-6 w-full max-w-sm rounded-2xl bg-white text-slate-900 py-4 font-black text-lg shadow-xl active:scale-95 transition"
+      <button
+        onClick={next}
+        className="pixel-btn font-pixel w-full max-w-[340px] mt-6 py-4 text-[10px] leading-relaxed text-[var(--p-black)]"
+        style={{ background: isLast ? "var(--p-cyan)" : "var(--p-lime)" }}
       >
-        {isLast ? "REVEAL MY AI CITY 🏙️" : "NEXT MISSION →"}
-      </motion.button>
+        {isLast ? "REVEAL MY CITY" : "NEXT MISSION"}
+      </button>
+
+      <div className="h-4" style={{ color: theme.accent }} />
     </div>
   );
 }

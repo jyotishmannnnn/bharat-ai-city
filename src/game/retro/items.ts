@@ -1072,6 +1072,212 @@ const PU_MAGNET_I: ItemSprite = [
   "................",
 ];
 
+// =========================================================== BUILDINGS =====
+// One landmark per sector, used by the select grid, mission intro and city view.
+
+const B_HOSPITAL: ItemSprite = [
+  "................",
+  "................",
+  "..kkkkkkkkkkkk..",
+  "..kwwwwwwwwwwk..",
+  "..kwwkkRRkkwwk..",
+  "..kwkRRRRRRkwk..",
+  "..kwkRRRRRRkwk..",
+  "..kwwkkRRkkwwk..",
+  "..kwwwwwwwwwwk..",
+  "..kwSSkwwkSSwk..",
+  "..kwSSkwwkSSwk..",
+  "..kwwwwwwwwwwk..",
+  "..kwSSkwwkSSwk..",
+  "..kwSSkwwkSSwk..",
+  "..kkkkkkkkkkkk..",
+  "................",
+];
+
+const B_STADIUM: ItemSprite = [
+  "................",
+  "....kkkkkkkk....",
+  "..kkYYYYYYYYkk..",
+  ".kYYkkkkkkkkYYk.",
+  "kYYkggggggggkYYk",
+  "kYkgglllllggggk.",
+  "kYkglWWWWWlgggk.",
+  "kYkglWkkkWlgggk.",
+  "kYkglWWWWWlgggk.",
+  "kYkgglllllggggk.",
+  "kYYkggggggggkYYk",
+  ".kYYkkkkkkkkYYk.",
+  "..kkYYYYYYYYkk..",
+  "....kkkkkkkk....",
+  "................",
+  "................",
+];
+
+const B_FAB: ItemSprite = [
+  "................",
+  "..j...j...j.....",
+  ".jjj.jjj.jjj....",
+  "..kk..kk..kk....",
+  "..kk..kk..kk....",
+  "kkkkkkkkkkkkkk..",
+  "kzzzzzzzzzzzzk..",
+  "kzcckzcckzcckk..",
+  "kzcckzcckzcckk..",
+  "kzzzzzzzzzzzzk..",
+  "kzcckzcckzcckk..",
+  "kzcckzcckzcckk..",
+  "kzzzzzzzzzzzzk..",
+  "kkkkkkkkkkkkkk..",
+  "................",
+  "................",
+];
+
+const B_QUANTUM: ItemSprite = [
+  "................",
+  ".......kk.......",
+  "......kUUk......",
+  ".kkk..kUUk..kkk.",
+  "kBBBkkkUUkkkBBBk",
+  "kBBBkUUUUUUkBBBk",
+  "kBBBkUUiiUUkBBBk",
+  "kkkkkUUiiUUkkkkk",
+  "....kUUUUUUk....",
+  "....kkUUUUkk....",
+  "......kUUk......",
+  "....kkkUUkkk....",
+  "...kzzzzzzzzk...",
+  "...kzzzzzzzzk...",
+  "...kkkkkkkkkk...",
+  "................",
+];
+
+const B_STUDIO: ItemSprite = [
+  "................",
+  "................",
+  ".kkkkkkkkkkkkkk.",
+  ".kjjjjjjjjjjjjk.",
+  ".kjWWkjjjjkWWjk.",
+  ".kjWWkjjjjkWWjk.",
+  ".kjjjjjjjjjjjjk.",
+  ".kjkUUUUUUUUkjk.",
+  ".kjkUUWWWWUUkjk.",
+  ".kjkUUUUUUUUkjk.",
+  ".kjjjjjjjjjjjjk.",
+  ".kjYYkjjjjkYYjk.",
+  ".kjYYkjjjjkYYjk.",
+  ".kkkkkkkkkkkkkk.",
+  "................",
+  "................",
+];
+
+const B_ROBOT: ItemSprite = [
+  "................",
+  ".......kk.......",
+  ".......kck......",
+  "....kkkkkkkk....",
+  "...kZZZZZZZZk...",
+  "...kZkccckZZk...",
+  "...kZkcWcckZk...",
+  "...kZkccckZZk...",
+  "...kZZZZZZZZk...",
+  "...kkkZZZZkkk...",
+  ".kkkZZZZZZZZkkk.",
+  "kZZkZZZZZZZZkZZk",
+  "kZZkZZzzzzZZkZZk",
+  "kkkkZZZZZZZZkkk.",
+  "....kkk..kkk....",
+  "................",
+];
+
+const B_FARM: ItemSprite = [
+  "................",
+  "......kkkk......",
+  ".....kddddk.....",
+  "....kdddddddk...",
+  "...kkkkkkkkkkk..",
+  "...knnnnnnnnnk..",
+  "...knbbbbbbbnk..",
+  "...knbkkkkkbnk..",
+  "...knbkdddkbnk..",
+  "...knbkdddkbnk..",
+  "...knnnnnnnnnk..",
+  "...kkkkkkkkkkk..",
+  "..lYlYlYlYlYlY..",
+  "..lYlYlYlYlYlY..",
+  "..kkkkkkkkkkkk..",
+  "................",
+];
+
+const B_STATION: ItemSprite = [
+  "................",
+  "..kkkkkkkkkkkk..",
+  "..kzzzzzzzzzzk..",
+  ".kkkkkkkkkkkkkk.",
+  ".kzzzzzzzzzzzzk.",
+  ".kzkSSkzzkSSkzk.",
+  ".kzkSSkzzkSSkzk.",
+  ".kzzzzzzzzzzzzk.",
+  ".kzkSSkzzkSSkzk.",
+  ".kzkSSkzzkSSkzk.",
+  ".kzzzzzzzzzzzzk.",
+  ".kkkkkkkkkkkkkk.",
+  "..kk..kkkk..kk..",
+  "..kk..kkkk..kk..",
+  "................",
+  "................",
+];
+
+const B_SCHOOL: ItemSprite = [
+  "................",
+  ".......kk.......",
+  "......kYYk......",
+  ".....kkkkkk.....",
+  "...kkdddddddkk..",
+  "..kddddddddddk..",
+  ".kkkkkkkkkkkkkk.",
+  ".knnnnnnnnnnnnk.",
+  ".knSSknnnkSSnnk.",
+  ".knSSknnnkSSnnk.",
+  ".knnnnnnnnnnnnk.",
+  ".knSSknnnkSSnnk.",
+  ".knSSknnnkSSnnk.",
+  ".knnnkkkknnnnnk.",
+  ".kkkkkkkkkkkkkk.",
+  "................",
+];
+
+const B_GREEN: ItemSprite = [
+  "................",
+  "................",
+  "....kkkkkkkk....",
+  "..kkggggggggkk..",
+  ".kgglllllllggk..",
+  "kggllLLLLLllggk.",
+  "kgllLLLLLLLllgk.",
+  "kgllLLLLLLLllgk.",
+  "kggllLLLLLllggk.",
+  ".kgglllllllggk..",
+  "..kkggggggggkk..",
+  "....kknnkk......",
+  "......knnk......",
+  "......knnk......",
+  ".....kknnkk.....",
+  "................",
+];
+
+export const BUILDINGS: Record<SectorId, ItemSprite> = {
+  healthcare: B_HOSPITAL,
+  sports: B_STADIUM,
+  semiconductors: B_FAB,
+  quantum: B_QUANTUM,
+  entertainment: B_STUDIO,
+  robotics: B_ROBOT,
+  agriculture: B_FARM,
+  mobility: B_STATION,
+  education: B_SCHOOL,
+  climate: B_GREEN,
+};
+
 // ============================================================ REGISTRY =====
 
 export const ITEMS: Record<string, ItemSprite> = {
