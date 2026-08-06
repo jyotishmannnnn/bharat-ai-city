@@ -21,7 +21,9 @@ export interface FounderScores {
   originalityScore: number;
 }
 
-/** Derive founder-card scores (0-100) from the three mission results. */
+/** Derive founder-card scores (0-100) from the run's mission results.
+ *  Everything here is averaged over `results.length`, so the number of missions
+ *  per run can change without touching this file. */
 export function deriveFounderScores(results: MissionResult[]): FounderScores {
   const avgScore = results.reduce((s, r) => s + r.score, 0) / results.length;
   const avgAccuracy =

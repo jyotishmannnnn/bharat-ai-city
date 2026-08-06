@@ -9,6 +9,7 @@ import {
   FounderProfile,
 } from "@/game/types";
 import { deriveFounderScores, pickArchetype } from "@/lib/scoring";
+import { MISSIONS_PER_RUN } from "@/lib/gameConfig";
 
 export type Phase =
   | "welcome"
@@ -77,7 +78,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     const { chosenSectors } = get();
     if (chosenSectors.includes(sector)) {
       set({ chosenSectors: chosenSectors.filter((s) => s !== sector) });
-    } else if (chosenSectors.length < 3) {
+    } else if (chosenSectors.length < MISSIONS_PER_RUN) {
       set({ chosenSectors: [...chosenSectors, sector] });
     }
   },

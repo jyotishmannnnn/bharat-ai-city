@@ -5,6 +5,7 @@ import { useGameStore } from "@/lib/store";
 import { PixelSprite } from "@/components/retro/PixelSprite";
 import { BUILDINGS } from "@/game/retro/items";
 import { chiptune, haptics } from "@/lib/chiptune";
+import { MISSIONS_PER_RUN } from "@/lib/gameConfig";
 
 // Decorative skyline strip. CSS-animated (not Framer) so it stays off the JS
 // main thread on low-end phones -- a real share of a 1200-person room.
@@ -75,8 +76,11 @@ export default function Welcome() {
       </div>
 
       <p className="relative z-10 mt-5 text-center text-[8px] leading-[1.9] text-[var(--p-off)] max-w-[280px]">
-        BUILD <span className="text-[var(--p-lime)]">3 AI STARTUPS</span> AND
-        TRANSFORM BHARAT
+        BUILD{" "}
+        <span className="text-[var(--p-lime)]">
+          {MISSIONS_PER_RUN} AI STARTUPS
+        </span>{" "}
+        AND TRANSFORM BHARAT
       </p>
 
       {/* skyline strip */}

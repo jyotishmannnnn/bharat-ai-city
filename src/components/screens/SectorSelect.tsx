@@ -3,6 +3,7 @@
 import { allSectors, useGameStore } from "@/lib/store";
 import { BuildingSprite } from "@/components/retro/PixelSprite";
 import { chiptune, haptics } from "@/lib/chiptune";
+import { MISSIONS_PER_RUN } from "@/lib/gameConfig";
 
 export default function SectorSelect() {
   const sectors = allSectors();
@@ -10,7 +11,8 @@ export default function SectorSelect() {
   const toggleSector = useGameStore((s) => s.toggleSector);
   const confirmSectors = useGameStore((s) => s.confirmSectors);
 
-  const ready = chosenSectors.length === 3;
+  const ready = chosenSectors.length === MISSIONS_PER_RUN;
+  const remaining = MISSIONS_PER_RUN - chosenSectors.length;
 
   const pick = (id: (typeof sectors)[number]["id"], disabled: boolean) => {
     chiptune.init();
@@ -28,10 +30,10 @@ export default function SectorSelect() {
     <div className="pixel-screen crt w-full h-full overflow-y-auto px-4 pt-7 pb-28">
       <div className="text-center mb-5">
         <h2 className="text-[13px] leading-relaxed text-[var(--p-yellow)]">
-          PICK 3 SECTORS
+          PICK {MISSIONS_PER_RUN} SECTORS
         </h2>
         <p className="text-[8px] leading-relaxed text-[var(--p-silver)] mt-3">
-          SELECTED {chosenSectors.length}/3
+          SELECTED {chosenSectors.length}/{MISSIONS_PER_RUN}
         </p>
       </div>
 
@@ -84,7 +86,9 @@ export default function SectorSelect() {
             color: ready ? "var(--p-black)" : "var(--p-slate-l)",
           }}
         >
-          {ready ? "LAUNCH MISSIONS" : `PICK ${3 - chosenSectors.length} MORE`}
+          {ready
+            ? "LAUNCH MISSIONS"
+            : `PICK ${remaining} MORE`}
         </button>
       </div>
     </div>

@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import React from "react";
+import { MISSIONS_WORD } from "@/lib/gameConfig";
 import { Geist, Geist_Mono, Press_Start_2P } from "next/font/google";
 import "./globals.css";
 
@@ -23,7 +24,7 @@ const pressStart = Press_Start_2P({
 
 export const metadata: Metadata = {
   title: "Build Bharat AI City",
-  description: "Build three AI startups and transform Bharat AI City. An arcade mini-game from the Bharat AI Summit.",
+  description: `Build ${MISSIONS_WORD.toLowerCase()} AI startups and transform Bharat AI City. An arcade mini-game from the Bharat AI Summit.`,
 };
 
 export const viewport: Viewport = {
